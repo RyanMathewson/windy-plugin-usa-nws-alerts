@@ -6,10 +6,10 @@
                 style:border-left-color={colorFromSeverity(alert.severity)}
                 on:click={() => console.log(alert.description)}
             >
-                <div class="alert__name size-l mb-5">
+                <div class="size-l mb-5">
                     {alert.event}
                 </div>
-                <div class="alert__heading nowrap">
+                <div class="nowrap">
                     Severity: {alert.severity}<br />
                     Headline:&nbsp;{alert.headline}°
                 </div>
