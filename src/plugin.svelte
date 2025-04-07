@@ -66,7 +66,7 @@
         headline: string;
         areaDesc: string;
         layer?: L.Polyline;
-    };
+    }
 
     let lines: L.Polyline[] = [];
     let listOfAlerts: DisplayedAlert[] = [];
@@ -74,28 +74,27 @@
 
     const displayPopup = (message: string, location: L.LatLngExpression) => {
         openedPopup?.remove();
- 
+
         openedPopup = new L.Popup({ autoClose: false, closeOnClick: false })
             .setLatLng(location)
             .setContent(message)
             .openOn(map);
-  
     };
 
     function colorFromSeverity(severity: string): string {
         let hue = 0;
-        if(severity === "Extreme"){
+        if (severity === 'Extreme') {
             hue = 300; // Purple
-        }else if(severity === "Severe"){
+        } else if (severity === 'Severe') {
             hue = 0; // Red
-        }else if(severity === "Moderate"){
+        } else if (severity === 'Moderate') {
             hue = 59; // Yellow
-        }else if(severity === "Minor"){
+        } else if (severity === 'Minor') {
             hue = 147; // Green
-        }else{
+        } else {
             hue = 214; // Blue
         }
-        
+
         const color = `hsl(${hue}, 100%, 50%)`;
         return color;
     }
@@ -105,17 +104,13 @@
             .then(response => response.json())
             .then(result => result.features)
             .then((nwsAlerts: NWSAlert[]) => {
-
                 // Clear the map
                 removeAllMapFeatures();
 
                 const temporaryListOfAlerts: DisplayedAlert[] = [];
 
-                for(var i = 0; i < nwsAlerts.length; i++){
-
-                    var nwsAlert = nwsAlerts[i];
-
-                    if(nwsAlert.geometry == null || nwsAlert.geometry.type !== "Polygon"){
+                for (var nwsAlert of nwsAlerts) {
+                    if (nwsAlert.geometry == null || nwsAlert.geometry.type !== 'Polygon') {
                         continue; // Unsupported alert
                     }
 
@@ -130,15 +125,14 @@
                     temporaryListOfAlerts.push(alert);
 
                     const color = colorFromSeverity(nwsAlert.properties.severity);
-                    for(var j = 0; j < nwsAlert.geometry.coordinates.length; j++){
+                    for (var geometry of nwsAlert.geometry.coordinates) {
                         const track: L.LatLngExpression[] = [];
-                        for(var k = 0; k < nwsAlert.geometry.coordinates[j].length; k++){
-                            const point = nwsAlert.geometry.coordinates[j][k];
+                        for (var point of geometry) {
                             track.push([point[1], point[0]]); // Swap coordinates to match what Windy expects
                         }
                         const layer = new L.Polyline(track, {
                             color,
-                            weight: 2,                                
+                            weight: 2,
                         });
 
                         layer.on('mouseover', () => layer.setStyle({ weight: 4 }));
@@ -154,7 +148,6 @@
 
                         alert.layer = layer;
                     }
-               
                 }
 
                 // Update our local list of alerts
