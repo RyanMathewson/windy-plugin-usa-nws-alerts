@@ -185,7 +185,7 @@
 
     const refreshAlertList = () => {
         const mapBounds = map.getBounds();
-        filteredAlerts = allAlerts.filter(alert => alert.bounds && mapBounds.contains(alert.bounds));
+        filteredAlerts = allAlerts.filter(alert => alert.bounds && mapBounds.overlaps(alert.bounds));
     }
 
     export const onopen = () => {
