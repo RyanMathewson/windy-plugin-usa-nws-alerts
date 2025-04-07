@@ -110,15 +110,6 @@
                 for(var i = 0; i < alerts.length; i++){
 
                     var alert = alerts[i];
-                    if(alert.properties.event === "Severe Thunderstorm Watch" || 
-                       alert.properties.event === "Severe Thunderstorm Warning" ||
-                       alert.properties.event === "Severe Weather Statement" ||
-                       alert.properties.event === "Tornado Watch" ||
-                       alert.properties.event === "Tornado Warning"){
-                        // Good
-                    }else{
-                        //continue;
-                    }
 
                     if(alert.geometry && alert.geometry.type == "Polygon"){
                         const color = colorFromSeverity(alert.properties.severity);
