@@ -155,7 +155,7 @@
 
                         const description = nwsAlert.properties.description;
 
-                        layer.on('click', () => displayPopup(description, layer.getCenter()));
+                        layer.on('click', () => displayPopup(description, layer.getBounds().getCenter()));
 
                         lines.push(layer);
 
