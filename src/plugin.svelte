@@ -65,6 +65,7 @@
         event: string;
         headline: string;
         areaDesc: string;
+        layer?: L.Polyline;
     };
 
     let lines: L.Polyline[] = [];
@@ -103,51 +104,60 @@
         fetch('https://api.weather.gov/alerts/active')
             .then(response => response.json())
             .then(result => result.features)
-            .then((alerts: NWSAlert[]) => {
+            .then((nwsAlerts: NWSAlert[]) => {
+
+                // Clear the map
+                removeAllMapFeatures();
 
                 const temporaryListOfAlerts: DisplayedAlert[] = [];
 
-                for(var i = 0; i < alerts.length; i++){
+                for(var i = 0; i < nwsAlerts.length; i++){
 
-                    var alert = alerts[i];
+                    var nwsAlert = nwsAlerts[i];
 
-                    if(alert.geometry && alert.geometry.type == "Polygon"){
-                        const color = colorFromSeverity(alert.properties.severity);
-                        for(var j = 0; j < alert.geometry.coordinates.length; j++){
-                            const track: L.LatLngExpression[] = [];
-                            for(var k = 0; k < alert.geometry.coordinates[j].length; k++){
-                                const point = alert.geometry.coordinates[j][k];
-                                track.push([point[1], point[0]]); // Swap coordinates to match what Windy expects
-                            }
-                            const layer = new L.Polyline(track, {
-                                color,
-                                weight: 2,                                
-                            });
-
-                            layer.on('mouseover', () => layer.setStyle({ weight: 4 }));
-                            layer.on('mouseout', () => layer.setStyle({ weight: 2 }));
-
-                            const description = alert.properties.description;
-
-                            layer.on('click', () => displayPopup(description, layer.getCenter()));
-
-                            lines.push(layer);
-
-                            layer.addTo(map);
-
-                            const displayedAlert: DisplayedAlert = {
-                                severity: alert.properties.severity,
-                                event: alert.properties.event,
-                                description: alert.properties.description,
-                                areaDesc: alert.properties.areaDesc,
-                                headline: alert.properties.headline,
-                            };
-
-                            temporaryListOfAlerts.push(displayedAlert);
-                        }
+                    if(nwsAlert.geometry == null || nwsAlert.geometry.type !== "Polygon"){
+                        continue; // Unsupported alert
                     }
+
+                    const alert: DisplayedAlert = {
+                        severity: nwsAlert.properties.severity,
+                        event: nwsAlert.properties.event,
+                        description: nwsAlert.properties.description,
+                        areaDesc: nwsAlert.properties.areaDesc,
+                        headline: nwsAlert.properties.headline,
+                    };
+
+                    temporaryListOfAlerts.push(alert);
+
+                    const color = colorFromSeverity(nwsAlert.properties.severity);
+                    for(var j = 0; j < nwsAlert.geometry.coordinates.length; j++){
+                        const track: L.LatLngExpression[] = [];
+                        for(var k = 0; k < nwsAlert.geometry.coordinates[j].length; k++){
+                            const point = nwsAlert.geometry.coordinates[j][k];
+                            track.push([point[1], point[0]]); // Swap coordinates to match what Windy expects
+                        }
+                        const layer = new L.Polyline(track, {
+                            color,
+                            weight: 2,                                
+                        });
+
+                        layer.on('mouseover', () => layer.setStyle({ weight: 4 }));
+                        layer.on('mouseout', () => layer.setStyle({ weight: 2 }));
+
+                        const description = nwsAlert.properties.description;
+
+                        layer.on('click', () => displayPopup(description, layer.getCenter()));
+
+                        lines.push(layer);
+
+                        layer.addTo(map);
+
+                        alert.layer = layer;
+                    }
+               
                 }
 
+                // Update our local list of alerts
                 listOfAlerts = temporaryListOfAlerts;
             })
             .catch(console.error);
