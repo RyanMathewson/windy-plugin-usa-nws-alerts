@@ -26,6 +26,14 @@
                 Back to menu
             </div>
         </div>
+        <div class="mb-30 centered">
+            <div
+                class="button button--variant-orange size-s"
+                on:click={() => loadAlerts()}
+            >
+                Refresh
+            </div>
+        </div>
         {#each filteredAlerts as alert}
             <div
                 class="alert mb-20 size-xs clickable"
@@ -102,14 +110,16 @@
         return color;
     }
 
-    const loadResults = () => {
+    const loadAlerts = () => {
+        // Clear the map
+        removeAllMapFeatures();
+        allAlerts = [];
+        filteredAlerts = [];
+
         fetch('https://api.weather.gov/alerts/active')
             .then(response => response.json())
             .then(result => result.features)
             .then((nwsAlerts: NWSAlert[]) => {
-                // Clear the map
-                removeAllMapFeatures();
-
                 const temporaryListOfAlerts: DisplayedAlert[] = [];
 
                 for (var nwsAlert of nwsAlerts) {
@@ -179,7 +189,7 @@
     }
 
     export const onopen = () => {
-        loadResults();
+        loadAlerts();
     };
 
     onMount(() => {
