@@ -1,6 +1,6 @@
 {#if isMobileOrTablet}
     <section class="mobile-alert-ui horizontal-scroll">
-        {#each listOfAlerts as alert}
+        {#each filteredAlerts as alert}
             <div
                 class="alert mr-20 size-xs clickable"
                 style:border-left-color={colorFromSeverity(alert.severity)}
@@ -26,7 +26,7 @@
                 Back to menu
             </div>
         </div>
-        {#each listOfAlerts as alert}
+        {#each filteredAlerts as alert}
             <div
                 class="alert mb-20 size-xs clickable"
                 style:border-left-color={colorFromSeverity(alert.severity)}
@@ -53,7 +53,7 @@
     import bcast from '@windy/broadcast';
     import { map } from '@windy/map';
     import { isMobileOrTablet } from '@windy/rootScope';
-    import { onDestroy } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
 
     // IMPORTANT: all types must be imported as `type` otherwise
     // Svelte TS compiler will fail
@@ -65,11 +65,14 @@
         event: string;
         headline: string;
         areaDesc: string;
-        layer?: L.Polyline;
+        layers: L.Polyline[];
+        center?: L.LatLng;
+        bounds?: L.LatLngBounds;
     }
 
     let lines: L.Polyline[] = [];
-    let listOfAlerts: DisplayedAlert[] = [];
+    let allAlerts: DisplayedAlert[] = [];
+    let filteredAlerts: DisplayedAlert[] = [];
     let openedPopup: L.Popup | null = null;
 
     const displayPopup = (message: string, location: L.LatLngExpression) => {
@@ -120,9 +123,11 @@
                         description: nwsAlert.properties.description,
                         areaDesc: nwsAlert.properties.areaDesc,
                         headline: nwsAlert.properties.headline,
+                        layers: [],
                     };
 
                     temporaryListOfAlerts.push(alert);
+
 
                     const color = colorFromSeverity(nwsAlert.properties.severity);
                     for (var geometry of nwsAlert.geometry.coordinates) {
@@ -146,12 +151,18 @@
 
                         layer.addTo(map);
 
-                        alert.layer = layer;
+                        alert.layers.push(layer);
+
+                        // TODO We are only saving these from the last layer
+                        alert.center = layer.getCenter();
+                        alert.bounds = layer.getBounds();
                     }
                 }
 
                 // Update our local list of alerts
-                listOfAlerts = temporaryListOfAlerts;
+                allAlerts = temporaryListOfAlerts;
+
+                refreshAlertList();
             })
             .catch(console.error);
     };
@@ -162,9 +173,19 @@
         lines = [];
     };
 
+    const refreshAlertList = () => {
+        const mapBounds = map.getBounds();
+        filteredAlerts = allAlerts.filter(alert => alert.bounds && mapBounds.contains(alert.bounds));
+    }
+
     export const onopen = () => {
         loadResults();
     };
+
+    onMount(() => {
+        map.on('zoomend', refreshAlertList);
+        map.on('moveend', refreshAlertList);
+    });
 
     onDestroy(() => {
         removeAllMapFeatures();
