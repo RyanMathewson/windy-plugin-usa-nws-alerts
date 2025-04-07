@@ -1,18 +1,17 @@
 {#if isMobileOrTablet}
     <section class="mobile-alert-ui horizontal-scroll">
         {#each listOfAlerts as alert}
-            {@const { properties } = alert}
             <div
                 class="alert mr-20 size-xs clickable"
-                style:border-left-color={colorFromSeverity(properties.severity)}
-                on:click={() => console.log(properties.description)}
+                style:border-left-color={colorFromSeverity(alert.severity)}
+                on:click={() => console.log(alert.description)}
             >
                 <div class="alert__name size-l mb-5">
-                    {properties.event}
+                    {alert.event}
                 </div>
                 <div class="alert__heading nowrap">
-                    Severity: {properties.severity}<br />
-                    Headline:&nbsp;{properties.headline}°
+                    Severity: {alert.severity}<br />
+                    Headline:&nbsp;{alert.headline}°
                 </div>
             </div>
         {/each}
@@ -28,23 +27,22 @@
             </div>
         </div>
         {#each listOfAlerts as alert}
-            {@const { properties } = alert}
             <div
                 class="alert mb-20 size-xs clickable"
-                style:border-left-color={colorFromSeverity(properties.severity)}
-                on:click={() => console.log(properties.description)}
+                style:border-left-color={colorFromSeverity(alert.severity)}
+                on:click={() => console.log(alert.description)}
             >
                 <div class="size-l mb-5">
-                    {properties.event}
+                    {alert.event}
                 </div>
                 <div>
-                    Severity: {properties.severity}
+                    Severity: {alert.severity}
                 </div>
                 <div>
-                    Headline: {properties.headline}°
+                    Headline: {alert.headline}°
                 </div>
                 <div>
-                    Area: {properties.areaDesc}
+                    Area: {alert.areaDesc}
                 </div>
             </div>
         {/each}
@@ -61,10 +59,17 @@
     // Svelte TS compiler will fail
     import type { NWSAlert } from './nws';
 
-    let lines: L.Polyline[] = [];
-    let listOfAlerts: NWSAlert[] = [];
-    let openedPopup: L.Popup | null = null;
+    interface DisplayedAlert {
+        severity: string;
+        description: string;
+        event: string;
+        headline: string;
+        areaDesc: string;
+    };
 
+    let lines: L.Polyline[] = [];
+    let listOfAlerts: DisplayedAlert[] = [];
+    let openedPopup: L.Popup | null = null;
 
     const displayPopup = (message: string, location: L.LatLngExpression) => {
         openedPopup?.remove();
@@ -100,7 +105,7 @@
             .then(result => result.features)
             .then((alerts: NWSAlert[]) => {
 
-                const temporaryListOfAlerts: NWSAlert[] = [];
+                const temporaryListOfAlerts: DisplayedAlert[] = [];
 
                 for(var i = 0; i < alerts.length; i++){
 
@@ -112,7 +117,7 @@
                        alert.properties.event === "Tornado Warning"){
                         // Good
                     }else{
-                        continue;
+                        //continue;
                     }
 
                     if(alert.geometry && alert.geometry.type == "Polygon"){
@@ -139,7 +144,15 @@
 
                             layer.addTo(map);
 
-                            temporaryListOfAlerts.push(alert);
+                            const displayedAlert: DisplayedAlert = {
+                                severity: alert.properties.severity,
+                                event: alert.properties.event,
+                                description: alert.properties.description,
+                                areaDesc: alert.properties.areaDesc,
+                                headline: alert.properties.headline,
+                            };
+
+                            temporaryListOfAlerts.push(displayedAlert);
                         }
                     }
                 }
