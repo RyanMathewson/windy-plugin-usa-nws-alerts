@@ -24,6 +24,7 @@
     },
     "homepage": "https://github.com/RyanMathewson/windy-plugin-usa-nws-alerts",
     "dependencies": {
-        "@windycom/plugin-devtools": "^3.0.0"
+        "@windycom/plugin-devtools": "^3.0.0",
+        "date-fns": "^4.1.0"
     }
 }

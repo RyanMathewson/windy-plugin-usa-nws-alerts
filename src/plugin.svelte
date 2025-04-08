@@ -26,7 +26,10 @@
                 Back to menu
             </div>
         </div>
-        <div class="mb-30 centered">
+        <div class="mb-10 size-s centered">
+            Last Refresh: {timeAgo}
+        </div>
+        <div class="mb-10 centered">
             <div
                 class="button button--variant-orange size-s"
                 on:click={() => loadAlerts()}
@@ -62,6 +65,7 @@
     import { map } from '@windy/map';
     import { isMobileOrTablet } from '@windy/rootScope';
     import { onMount, onDestroy } from 'svelte';
+    import { formatDistanceToNow } from 'date-fns';
 
     // IMPORTANT: all types must be imported as `type` otherwise
     // Svelte TS compiler will fail
@@ -82,6 +86,8 @@
     let allAlerts: DisplayedAlert[] = [];
     let filteredAlerts: DisplayedAlert[] = [];
     let openedPopup: L.Popup | null = null;
+    let lastRefresh: Date | null = null;
+    let timeAgo: string = "Loading...";  // Placeholder text
 
     const displayPopup = (message: string, location: L.LatLngExpression) => {
         openedPopup?.remove();
@@ -115,11 +121,13 @@
         removeAllMapFeatures();
         allAlerts = [];
         filteredAlerts = [];
+        lastRefresh = null;
 
         fetch('https://api.weather.gov/alerts/active')
             .then(response => response.json())
             .then(result => result.features)
             .then((nwsAlerts: NWSAlert[]) => {
+                lastRefresh = new Date();
                 const temporaryListOfAlerts: DisplayedAlert[] = [];
 
                 for (var nwsAlert of nwsAlerts) {
@@ -188,6 +196,12 @@
         filteredAlerts = allAlerts.filter(alert => alert.bounds && mapBounds.intersects(alert.bounds));
     }
 
+    const lastUpdatedRefreshInterval = setInterval(() => {
+        if(lastRefresh){
+            timeAgo = formatDistanceToNow(lastRefresh, { addSuffix: true });
+        }
+    }, 1000);
+
     export const onopen = () => {
         loadAlerts();
     };
@@ -199,6 +213,7 @@
 
     onDestroy(() => {
         removeAllMapFeatures();
+        clearInterval(lastUpdatedRefreshInterval);
     });
 </script>
 
