@@ -10,7 +10,7 @@ const config: ExternalPluginConfig = {
     repository: 'https://github.com/RyanMathewson/TBD',
     desktopUI: 'rhpane',
     mobileUI: 'small',
-    desktopWidth: 200,
+    desktopWidth: 400,
     routerPath: '/usa-nws-alerts',
 };
 

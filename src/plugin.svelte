@@ -1,6 +1,6 @@
 {#if isMobileOrTablet}
     <section class="mobile-alert-ui horizontal-scroll">
-        {#each filteredAlerts as alert}
+        {#each displayedAlerts as alert}
             <div
                 class="alert mr-20 size-xs clickable"
                 style:border-left-color={colorFromSeverity(alert.severity)}
@@ -18,7 +18,7 @@
     </section>
 {:else}
     <section class="plugin__content">
-        <div class="mb-30 centered">
+        <div class="centered">
             <div
                 class="button button--variant-orange size-s"
                 on:click={() => bcast.emit('rqstOpen', 'menu')}
@@ -26,18 +26,67 @@
                 Back to menu
             </div>
         </div>
-        <div class="mb-10 size-s centered">
-            Last Refresh: {timeAgo}
-        </div>
-        <div class="mb-10 centered">
-            <div
-                class="button button--variant-orange size-s"
-                on:click={() => loadAlerts()}
-            >
+        <div class="menu-top rounded-box rounded-box--with-border mm-section mb-10">
+            <div class="size-s">
+                Last Refresh: {timeAgo}
+            </div>
+            <div class="button button--variant-orange size-s" on:click={() => loadAlerts()}>
                 Refresh
             </div>
+            <ul style="list-style-type: none">
+                <li>
+                    <label>
+                        <input
+                            type="checkbox"
+                            bind:checked={includeStormEvents}
+                            on:change={filtersChanged}
+                        />
+                        Storms & Tornados
+                    </label>
+                </li>
+                <li>
+                    <label>
+                        <input
+                            type="checkbox"
+                            bind:checked={includeWindEvents}
+                            on:change={filtersChanged}
+                        />
+                        Wind & Dust
+                    </label>
+                </li>
+                <li>
+                    <label>
+                        <input
+                            type="checkbox"
+                            bind:checked={includeFloodEvents}
+                            on:change={filtersChanged}
+                        />
+                        Floods
+                    </label>
+                </li>
+                <li>
+                    <label>
+                        <input
+                            type="checkbox"
+                            bind:checked={includeWinterEvents}
+                            on:change={filtersChanged}
+                        />
+                        Winter & Snow
+                    </label>
+                </li>
+                <li>
+                    <label>
+                        <input
+                            type="checkbox"
+                            bind:checked={includeOtherEvents}
+                            on:change={filtersChanged}
+                        />
+                        Other
+                    </label>
+                </li>
+            </ul>
         </div>
-        {#each filteredAlerts as alert}
+        {#each displayedAlerts as alert}
             <div
                 class="alert mb-20 size-xs clickable"
                 style:border-left-color={colorFromSeverity(alert.severity)}
@@ -85,9 +134,80 @@
     let lines: L.Polyline[] = [];
     let allAlerts: DisplayedAlert[] = [];
     let filteredAlerts: DisplayedAlert[] = [];
+    let displayedAlerts: DisplayedAlert[] = [];
     let openedPopup: L.Popup | null = null;
     let lastRefresh: Date | null = null;
-    let timeAgo: string = "Loading...";  // Placeholder text
+    let timeAgo: string = 'Loading...'; // Placeholder text
+
+    // Alert filters
+    let includeStormEvents = true;
+    const stormAlertEvents = [
+        'Severe Thunderstorm Watch',
+        'Severe Thunderstorm Warning',
+        'Severe Weather Statement',
+        'Special Weather Statement',
+        'Tornado Watch',
+        'Tornado Warning',
+        'Tropical Storm Watch',
+        'Tropical Storm Warning',
+        'Hurricane Watch',
+        'Hurricane Warning',
+        'Hurricane Statement',
+    ];
+
+    let includeFloodEvents = true;
+    const floodAlertEvents = [
+        'Coastal Flood Watch',
+        'Coastal Flood Warning',
+        'Flash Flood Watch',
+        'Flash Flood Warning',
+        'Flash Flood Statement',
+        'Flood Watch',
+        'Flood Warning',
+        'Flood Statement',
+        'Storm Surge Watch',
+        'Storm Surge Warning',
+        'Tsunami Watch',
+        'Tsunami Warning',
+    ];
+
+    let includeWindEvents = true;
+    const windAlertEvents = [
+        'Extreme Wind Warning',
+        'High Wind Watch',
+        'High Wind Warning',
+        'Dust Storm Warning',
+    ];
+
+    let includeWinterEvents = true;
+    const winterAlertEvents = [
+        'Winter Storm Watch',
+        'Winter Storm Warning',
+        'Blizzard Warning',
+        'Snow Squall Warning',
+        'Avalanche Watch',
+        'Avalanche Warning',
+    ];
+
+    let includeOtherEvents = true;
+    const otherAlertEvents = [
+        'Special Marine Warning',
+        'Blue Alert',
+        'Child Abduction Emergency',
+        'Civil Danger Warning',
+        'Civil Emergency Message',
+        'Earthquake Warning',
+        'Evacuation Immediate',
+        'Fire Warning',
+        'Hazardous Materials Warning',
+        'Law Enforcement Warning',
+        'Local Area Emergency',
+        '911 Telephone Outage Emergency',
+        'Nuclear Power Plant Warning',
+        'Radiological Hazard Warning',
+        'Shelter in Place Warning',
+        'Volcano Warning',
+    ];
 
     const displayPopup = (message: string, location: L.LatLngExpression) => {
         openedPopup?.remove();
@@ -120,7 +240,7 @@
         // Clear the map
         removeAllMapFeatures();
         allAlerts = [];
-        filteredAlerts = [];
+        displayedAlerts = [];
         lastRefresh = null;
 
         fetch('https://api.weather.gov/alerts/active')
@@ -146,7 +266,6 @@
 
                     temporaryListOfAlerts.push(alert);
 
-
                     const color = colorFromSeverity(nwsAlert.properties.severity);
                     for (var geometry of nwsAlert.geometry.coordinates) {
                         const track: L.LatLngExpression[] = [];
@@ -163,7 +282,9 @@
 
                         const description = nwsAlert.properties.description;
 
-                        layer.on('click', () => displayPopup(description, layer.getBounds().getCenter()));
+                        layer.on('click', () =>
+                            displayPopup(description, layer.getBounds().getCenter()),
+                        );
 
                         lines.push(layer);
 
@@ -180,7 +301,7 @@
                 // Update our local list of alerts
                 allAlerts = temporaryListOfAlerts;
 
-                refreshAlertList();
+                filtersChanged();
             })
             .catch(console.error);
     };
@@ -191,13 +312,44 @@
         lines = [];
     };
 
-    const refreshAlertList = () => {
+    const filtersChanged = () => {
+        console.log('Filters Changed');
+
+        removeAllMapFeatures();
+
+        let includedAlerts = [];
+        for (let alert of allAlerts) {
+            if (
+                (includeFloodEvents && floodAlertEvents.includes(alert.event)) ||
+                (includeStormEvents && stormAlertEvents.includes(alert.event)) ||
+                (includeWindEvents && windAlertEvents.includes(alert.event)) ||
+                (includeWinterEvents && winterAlertEvents.includes(alert.event)) ||
+                (includeOtherEvents && otherAlertEvents.includes(alert.event))
+            ) {
+                includedAlerts.push(alert);
+
+                // Add this alerts layers to the map
+                for (let layer of alert.layers) {
+                    layer.addTo(map);
+                    lines.push(layer);
+                }
+            }
+        }
+
+        filteredAlerts = includedAlerts;
+
+        mapMoved();
+    };
+
+    const mapMoved = () => {
         const mapBounds = map.getBounds();
-        filteredAlerts = allAlerts.filter(alert => alert.bounds && mapBounds.intersects(alert.bounds));
-    }
+        displayedAlerts = filteredAlerts.filter(
+            alert => alert.bounds && mapBounds.intersects(alert.bounds),
+        );
+    };
 
     const lastUpdatedRefreshInterval = setInterval(() => {
-        if(lastRefresh){
+        if (lastRefresh) {
             timeAgo = formatDistanceToNow(lastRefresh, { addSuffix: true });
         }
     }, 1000);
@@ -207,8 +359,8 @@
     };
 
     onMount(() => {
-        map.on('zoomend', refreshAlertList);
-        map.on('moveend', refreshAlertList);
+        map.on('zoomend', mapMoved);
+        map.on('moveend', mapMoved);
     });
 
     onDestroy(() => {
