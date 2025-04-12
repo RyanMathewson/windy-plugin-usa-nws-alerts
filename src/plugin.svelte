@@ -18,20 +18,15 @@
     </section>
 {:else}
     <section class="plugin__content">
-        <div class="centered">
-            <div
-                class="button button--variant-orange size-s"
-                on:click={() => bcast.emit('rqstOpen', 'menu')}
-            >
-                Back to menu
-            </div>
+        <div class="plugin__title plugin__title--chevron-back" on:click={() => bcast.emit('rqstOpen', 'menu')}>
+            USA NWS Alerts
         </div>
         <div class="menu-top rounded-box rounded-box--with-border mm-section mb-10">
-            <div class="size-s">
-                Last Refresh: {timeAgo}
-            </div>
             <div class="button button--variant-orange size-s" on:click={() => loadAlerts()}>
                 Refresh
+            </div>
+            <div class="size-s">
+                Last Refresh: {timeAgo}
             </div>
             <ul style="list-style-type: none">
                 <li>
@@ -96,14 +91,14 @@
                     {alert.event}
                 </div>
                 <div>
+                    Area: {alert.areaDesc}
+                </div>
+                <div>
                     Severity: {alert.severity}
                 </div>
                 <div>
                     Headline: {alert.headline}°
-                </div>
-                <div>
-                    Area: {alert.areaDesc}
-                </div>
+                </div>                
             </div>
         {/each}
     </section>
