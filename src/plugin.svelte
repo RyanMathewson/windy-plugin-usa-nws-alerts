@@ -97,7 +97,7 @@
                     Area: {alert.areaDesc}
                 </div>
                 <div>
-                    Severity: {alert.severity}
+                    Time: {formatDate(alert.effective)} - {formatDate(alert.expires)}
                 </div>
                 <div>
                     Headline: {alert.headline}°
@@ -124,6 +124,8 @@
         event: string;
         headline: string;
         areaDesc: string;
+        effective: Date;
+        expires: Date;
         layers: L.Polyline[];
         center?: L.LatLng;
         bounds?: L.LatLngBounds;
@@ -137,7 +139,7 @@
     let lastRefresh: Date | null = null;
     let timeAgo: string = 'Loading...'; // Placeholder text
 
-    // Alert filters
+    // Alert filters (https://www.weather.gov/nwr/eventcodes)
     let includeStormEvents = true;
     const stormAlertEvents = [
         'Severe Thunderstorm Watch',
@@ -234,6 +236,18 @@
         return color;
     }
 
+    function formatDate(date: Date): string {
+        const options: Intl.DateTimeFormatOptions = {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZoneName: 'short',
+        };
+        return new Intl.DateTimeFormat(undefined, options).format(date).replace(',', '');
+    }
+
     const focusOnAlert = (alert: DisplayedAlert) => {
         // Clear any existing popups
         openedPopup?.remove();
@@ -271,6 +285,8 @@
                         description: nwsAlert.properties.description,
                         areaDesc: nwsAlert.properties.areaDesc,
                         headline: nwsAlert.properties.headline,
+                        effective: new Date(nwsAlert.properties.effective),
+                        expires: new Date(nwsAlert.properties.expires),
                         layers: [],
                     };
 
