@@ -4,7 +4,7 @@
             <div
                 class="alert mr-20 size-xs clickable"
                 style:border-left-color={colorFromSeverity(alert.severity)}
-                on:click={() => console.log(alert.description)}
+                on:click={() => focusOnAlert(alert)}
             >
                 <div class="size-l mb-5">
                     {alert.event}
@@ -18,7 +18,10 @@
     </section>
 {:else}
     <section class="plugin__content">
-        <div class="plugin__title plugin__title--chevron-back" on:click={() => bcast.emit('rqstOpen', 'menu')}>
+        <div
+            class="plugin__title plugin__title--chevron-back"
+            on:click={() => bcast.emit('rqstOpen', 'menu')}
+        >
             USA NWS Alerts
         </div>
         <div class="menu-top rounded-box rounded-box--with-border mm-section mb-10">
@@ -85,7 +88,7 @@
             <div
                 class="alert mb-20 size-xs clickable"
                 style:border-left-color={colorFromSeverity(alert.severity)}
-                on:click={() => console.log(alert.description)}
+                on:click={() => focusOnAlert(alert)}
             >
                 <div class="size-l mb-5">
                     {alert.event}
@@ -98,7 +101,7 @@
                 </div>
                 <div>
                     Headline: {alert.headline}°
-                </div>                
+                </div>
             </div>
         {/each}
     </section>
@@ -230,6 +233,18 @@
         const color = `hsl(${hue}, 100%, 50%)`;
         return color;
     }
+
+    const focusOnAlert = (alert: DisplayedAlert) => {
+        // Clear any existing popups
+        openedPopup?.remove();
+
+        // Fly to the alert
+        if (alert.bounds) {
+            map.flyToBounds(alert.bounds, {
+                duration: 1,
+            });
+        }
+    };
 
     const loadAlerts = () => {
         // Clear the map
