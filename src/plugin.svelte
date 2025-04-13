@@ -131,6 +131,7 @@
         expires: Date;
         layers: L.Polyline[];
         isAddedToMap: boolean;
+        severityLevel: number;
         center?: L.LatLng;
         bounds?: L.LatLngBounds;
     }
@@ -240,6 +241,20 @@
         return color;
     }
 
+    function levelFromSeverity(severity: string): number {
+        if (severity === 'Extreme') {
+            return 5;
+        } else if (severity === 'Severe') {
+            return 4;
+        } else if (severity === 'Moderate') {
+            return 3;
+        } else if (severity === 'Minor') {
+            return 2;
+        } else {
+            return 1;
+        }
+    }
+
     function formatDate(date: Date): string {
         const options: Intl.DateTimeFormatOptions = {
             year: 'numeric',
@@ -301,6 +316,7 @@
 
                     const alert: DisplayedAlert = {
                         severity: nwsAlert.properties.severity,
+                        severityLevel: levelFromSeverity(nwsAlert.properties.severity),
                         event: nwsAlert.properties.event,
                         description: nwsAlert.properties.description,
                         areaDesc: nwsAlert.properties.areaDesc,
@@ -343,7 +359,7 @@
                 }
 
                 // Update our local list of alerts
-                allAlerts = temporaryListOfAlerts;
+                allAlerts = temporaryListOfAlerts.sort((a, b) => a.severityLevel - b.severityLevel);
 
                 filtersChanged();
             })
