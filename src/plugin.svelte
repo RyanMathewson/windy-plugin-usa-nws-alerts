@@ -369,14 +369,13 @@
         let includedAlerts = [];
         for (let alert of allAlerts) {
             if (
-                (alert.effective <= radarTimestamp &&
-                    alert.expires >= radarTimestamp &&
-                    includeFloodEvents &&
-                    floodAlertEvents.includes(alert.event)) ||
-                (includeStormEvents && stormAlertEvents.includes(alert.event)) ||
-                (includeWindEvents && windAlertEvents.includes(alert.event)) ||
-                (includeWinterEvents && winterAlertEvents.includes(alert.event)) ||
-                (includeOtherEvents && otherAlertEvents.includes(alert.event))
+                alert.effective <= radarTimestamp &&
+                alert.expires >= radarTimestamp &&
+                ((includeFloodEvents && floodAlertEvents.includes(alert.event)) ||
+                    (includeStormEvents && stormAlertEvents.includes(alert.event)) ||
+                    (includeWindEvents && windAlertEvents.includes(alert.event)) ||
+                    (includeWinterEvents && winterAlertEvents.includes(alert.event)) ||
+                    (includeOtherEvents && otherAlertEvents.includes(alert.event)))
             ) {
                 includedAlerts.push(alert);
 
