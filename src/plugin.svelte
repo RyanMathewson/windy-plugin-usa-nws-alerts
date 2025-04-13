@@ -89,6 +89,8 @@
                 class="alert mb-20 size-xs clickable"
                 style:border-left-color={colorFromSeverity(alert.severity)}
                 on:click={() => focusOnAlert(alert)}
+                on:mouseenter={() => highlightAlert(alert)}
+                on:mouseleave={() => unHighlightAlert(alert)}
             >
                 <div class="size-l mb-5">
                     {alert.event}
@@ -262,6 +264,22 @@
         }
     };
 
+    const highlightAlert = (alert: DisplayedAlert) => {
+        if (alert.isAddedToMap) {
+            for (let layer of alert.layers) {
+                layer.setStyle({ weight: 4 });
+            }
+        }
+    };
+
+    const unHighlightAlert = (alert: DisplayedAlert) => {
+        if (alert.isAddedToMap) {
+            for (let layer of alert.layers) {
+                layer.setStyle({ weight: 2 });
+            }
+        }
+    };
+
     const loadAlerts = () => {
         // Clear the map
         removeAllMapFeatures();
@@ -349,8 +367,11 @@
     const filtersChanged = () => {
         let includedAlerts = [];
         for (let alert of allAlerts) {
-            if (alert.effective <= radarTimestamp && alert.expires >= radarTimestamp &&
-                (includeFloodEvents && floodAlertEvents.includes(alert.event)) ||
+            if (
+                (alert.effective <= radarTimestamp &&
+                    alert.expires >= radarTimestamp &&
+                    includeFloodEvents &&
+                    floodAlertEvents.includes(alert.event)) ||
                 (includeStormEvents && stormAlertEvents.includes(alert.event)) ||
                 (includeWindEvents && windAlertEvents.includes(alert.event)) ||
                 (includeWinterEvents && winterAlertEvents.includes(alert.event)) ||
