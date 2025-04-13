@@ -392,7 +392,7 @@
 
                 // Remove this alerts layers from the map if they exist
                 if (alert.isAddedToMap) {
-                    anyChanges = false;
+                    anyChanges = true;
                     for (let layer of alert.layers) {
                         layer.removeFrom(map);
                     }
