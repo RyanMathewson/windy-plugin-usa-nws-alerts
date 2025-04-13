@@ -113,6 +113,7 @@
     import { isMobileOrTablet } from '@windy/rootScope';
     import { onMount, onDestroy } from 'svelte';
     import { formatDistanceToNow } from 'date-fns';
+    import store from '@windy/store';
 
     // IMPORTANT: all types must be imported as `type` otherwise
     // Svelte TS compiler will fail
@@ -138,6 +139,7 @@
     let openedPopup: L.Popup | null = null;
     let lastRefresh: Date | null = null;
     let timeAgo: string = 'Loading...'; // Placeholder text
+    let radarTimestamp: Date = new Date();
 
     // Alert filters (https://www.weather.gov/nwr/eventcodes)
     let includeStormEvents = true;
@@ -339,12 +341,13 @@
     };
 
     const filtersChanged = () => {
-        console.log('Filters Changed');
-
         removeAllMapFeatures();
 
         let includedAlerts = [];
         for (let alert of allAlerts) {
+            if (alert.effective > radarTimestamp || alert.expires < radarTimestamp) {
+                continue; // This alert is not active based on the current timestamp of the radar
+            }
             if (
                 (includeFloodEvents && floodAlertEvents.includes(alert.event)) ||
                 (includeStormEvents && stormAlertEvents.includes(alert.event)) ||
@@ -364,10 +367,12 @@
 
         filteredAlerts = includedAlerts;
 
+        // Apply the map bounds filtering to the updated list of filtered alerts
         mapMoved();
     };
 
     const mapMoved = () => {
+        // Filter what alerts we are displaying based on the current view of the map
         const mapBounds = map.getBounds();
         displayedAlerts = filteredAlerts.filter(
             alert => alert.bounds && mapBounds.intersects(alert.bounds),
@@ -375,10 +380,17 @@
     };
 
     const lastUpdatedRefreshInterval = setInterval(() => {
+        // Update our last refresh message
         if (lastRefresh) {
             timeAgo = formatDistanceToNow(lastRefresh, { addSuffix: true });
         }
     }, 1000);
+
+    const radarTimestampChanged = (time: number) => {
+        // Filter the alerts based on the current radar timestamp
+        radarTimestamp = new Date(time);
+        filtersChanged();
+    };
 
     export const onopen = () => {
         loadAlerts();
@@ -387,6 +399,7 @@
     onMount(() => {
         map.on('zoomend', mapMoved);
         map.on('moveend', mapMoved);
+        store.on('radarTimestamp', time => radarTimestampChanged(time));
     });
 
     onDestroy(() => {
