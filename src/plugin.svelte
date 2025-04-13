@@ -365,6 +365,7 @@
     };
 
     const filtersChanged = () => {
+        let anyChanges = false;
         let includedAlerts = [];
         for (let alert of allAlerts) {
             if (
@@ -381,6 +382,7 @@
 
                 // Add this alerts layers to the map if they don't already exist
                 if (!alert.isAddedToMap) {
+                    anyChanges = true;
                     for (let layer of alert.layers) {
                         layer.addTo(map);
                     }
@@ -391,6 +393,7 @@
 
                 // Remove this alerts layers from the map if they exist
                 if (alert.isAddedToMap) {
+                    anyChanges = false;
                     for (let layer of alert.layers) {
                         layer.removeFrom(map);
                     }
@@ -399,10 +402,11 @@
             }
         }
 
-        filteredAlerts = includedAlerts;
-
-        // Apply the map bounds filtering to the updated list of filtered alerts
-        mapMoved();
+        if (anyChanges) {
+            filteredAlerts = includedAlerts;
+            // Apply the map bounds filtering to the updated list of filtered alerts
+            mapMoved();
+        }
     };
 
     const mapMoved = () => {
