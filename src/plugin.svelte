@@ -128,11 +128,11 @@
         effective: Date;
         expires: Date;
         layers: L.Polyline[];
+        isAddedToMap: boolean;
         center?: L.LatLng;
         bounds?: L.LatLngBounds;
     }
 
-    let lines: L.Polyline[] = [];
     let allAlerts: DisplayedAlert[] = [];
     let filteredAlerts: DisplayedAlert[] = [];
     let displayedAlerts: DisplayedAlert[] = [];
@@ -290,6 +290,7 @@
                         effective: new Date(nwsAlert.properties.effective),
                         expires: new Date(nwsAlert.properties.expires),
                         layers: [],
+                        isAddedToMap: true,
                     };
 
                     temporaryListOfAlerts.push(alert);
@@ -314,10 +315,7 @@
                             displayPopup(description, layer.getBounds().getCenter()),
                         );
 
-                        lines.push(layer);
-
-                        layer.addTo(map);
-
+                        map.addLayer(layer);
                         alert.layers.push(layer);
 
                         // TODO We are only saving these from the last layer
@@ -336,19 +334,22 @@
 
     const removeAllMapFeatures = () => {
         openedPopup?.remove();
-        lines.forEach(l => map.removeLayer(l));
-        lines = [];
+
+        // Remove all of our alert layers
+        for (var alert of allAlerts) {
+            for (var layer of alert.layers) {
+                if (map.hasLayer(layer)) {
+                    layer.removeFrom(map);
+                }
+            }
+            alert.isAddedToMap = false;
+        }
     };
 
     const filtersChanged = () => {
-        removeAllMapFeatures();
-
         let includedAlerts = [];
         for (let alert of allAlerts) {
-            if (alert.effective > radarTimestamp || alert.expires < radarTimestamp) {
-                continue; // This alert is not active based on the current timestamp of the radar
-            }
-            if (
+            if (alert.effective <= radarTimestamp && alert.expires >= radarTimestamp &&
                 (includeFloodEvents && floodAlertEvents.includes(alert.event)) ||
                 (includeStormEvents && stormAlertEvents.includes(alert.event)) ||
                 (includeWindEvents && windAlertEvents.includes(alert.event)) ||
@@ -357,10 +358,22 @@
             ) {
                 includedAlerts.push(alert);
 
-                // Add this alerts layers to the map
-                for (let layer of alert.layers) {
-                    layer.addTo(map);
-                    lines.push(layer);
+                // Add this alerts layers to the map if they don't already exist
+                if (!alert.isAddedToMap) {
+                    for (let layer of alert.layers) {
+                        layer.addTo(map);
+                    }
+                    alert.isAddedToMap = true;
+                }
+            } else {
+                // This alert has been filtered out so remove it
+
+                // Remove this alerts layers from the map if they exist
+                if (alert.isAddedToMap) {
+                    for (let layer of alert.layers) {
+                        layer.removeFrom(map);
+                    }
+                    alert.isAddedToMap = false;
                 }
             }
         }
