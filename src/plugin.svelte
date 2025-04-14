@@ -243,15 +243,15 @@
 
     function levelFromSeverity(severity: string): number {
         if (severity === 'Extreme') {
-            return 5;
+            return 1;
         } else if (severity === 'Severe') {
-            return 4;
+            return 2;
         } else if (severity === 'Moderate') {
             return 3;
         } else if (severity === 'Minor') {
-            return 2;
+            return 4;
         } else {
-            return 1;
+            return 5;
         }
     }
 
