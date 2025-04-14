@@ -11,7 +11,7 @@
                 </div>
                 <div class="nowrap">
                     Severity: {alert.severity}<br />
-                    Headline:&nbsp;{alert.headline}°
+                    Headline: {alert.headline}°
                 </div>
             </div>
         {/each}
@@ -96,13 +96,22 @@
                     {alert.event}
                 </div>
                 <div>
+                    Headline: {alert.headline}°
+                </div>
+                <div class="noWrap">
                     Area: {alert.areaDesc}
                 </div>
-                <div>
+                <div class="noWrap">
                     Time: {formatDate(alert.effective)} - {formatDate(alert.expires)}
                 </div>
-                <div>
-                    Headline: {alert.headline}°
+                <div class="noWrap">
+                    Sender: {alert.senderName} ({alert.sender})
+                </div>
+                <div class="noWrap" title={alert.description}>
+                    Description: {alert.description}
+                </div>
+                <div class="noWrap" title={alert.instruction}>
+                    Instruction: {alert.instruction ?? "None"}
                 </div>
             </div>
         {/each}
@@ -129,6 +138,14 @@
         areaDesc: string;
         effective: Date;
         expires: Date;
+        sender: string;
+        senderName: string;
+        certainty: string;
+        urgency: string;
+        status: string;
+        messageType: string;
+        category: string;
+        instruction: string;
         layers: L.Polyline[];
         isAddedToMap: boolean;
         severityLevel: number;
@@ -323,6 +340,14 @@
                         headline: nwsAlert.properties.headline,
                         effective: new Date(nwsAlert.properties.effective),
                         expires: new Date(nwsAlert.properties.expires),
+                        sender: nwsAlert.properties.sender,
+                        senderName: nwsAlert.properties.senderName,
+                        certainty: nwsAlert.properties.certainty,
+                        category: nwsAlert.properties.category,
+                        instruction: nwsAlert.properties.instruction,
+                        messageType: nwsAlert.properties.messageType,
+                        urgency: nwsAlert.properties.urgency,
+                        status: nwsAlert.properties.status,
                         layers: [],
                         isAddedToMap: true,
                     };
@@ -363,7 +388,11 @@
 
                 filtersChanged();
             })
-            .catch(console.error);
+            .catch(reason => {
+                lastRefresh = null;
+                timeAgo = "Error fetching alerts. Try again later.";
+                console.error(reason);
+            });
     };
 
     const removeAllMapFeatures = () => {
@@ -468,14 +497,14 @@
     .alert {
         padding-left: 7px;
         border-left: 5px solid;
-        &__speed {
-            white-space: nowrap;
-        }
     }
     .mobile-alert-ui {
         display: flex;
         flex-direction: row;
         align-items: center;
         overflow: auto;
+    }
+    .noWrap {
+        text-wrap: nowrap;
     }
 </style>
