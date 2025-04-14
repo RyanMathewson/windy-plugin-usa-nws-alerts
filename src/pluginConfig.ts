@@ -2,7 +2,7 @@ import type { ExternalPluginConfig } from '@windy/interfaces';
 
 const config: ExternalPluginConfig = {
     name: 'windy-plugin-usa-nws-alerts',
-    version: '0.0.5',
+    version: '0.0.6',
     title: 'USA NWS Alerts',
     icon: '⚠️',
     description: 'Displays alerts from the USA National Weather Service.',
