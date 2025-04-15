@@ -84,9 +84,10 @@
                 </li>
             </ul>
         </div>
-        {#each displayedAlerts as alert}
+        {#each displayedAlerts as alert (alert.id)}
             <div
                 class="alert mb-20 size-xs clickable"
+                class:highlightedAlert={alert.isHighlighted}
                 style:border-left-color={colorFromSeverity(alert.severity)}
                 on:click={() => focusOnAlert(alert)}
                 on:mouseenter={() => highlightAlert(alert)}
@@ -131,6 +132,7 @@
     import type { NWSAlert } from './nws';
 
     interface DisplayedAlert {
+        id: string;
         severity: string;
         description: string;
         event: string;
@@ -148,6 +150,7 @@
         instruction: string;
         layers: L.Polyline[];
         isAddedToMap: boolean;
+        isHighlighted: boolean;
         severityLevel: number;
         center?: L.LatLng;
         bounds?: L.LatLngBounds;
@@ -303,6 +306,8 @@
             for (let layer of alert.layers) {
                 layer.setStyle({ weight: 4 });
             }
+            alert.isHighlighted = true;
+            displayedAlerts = [...displayedAlerts]
         }
     };
 
@@ -311,6 +316,9 @@
             for (let layer of alert.layers) {
                 layer.setStyle({ weight: 2 });
             }
+
+            alert.isHighlighted = false;
+            displayedAlerts = [...displayedAlerts]
         }
     };
 
@@ -338,6 +346,7 @@
                     }
 
                     const alert: DisplayedAlert = {
+                        id: nwsAlert.properties['@id'],
                         severity: nwsAlert.properties.severity,
                         severityLevel: levelFromSeverity(nwsAlert.properties.severity),
                         event: nwsAlert.properties.event,
@@ -356,6 +365,7 @@
                         status: nwsAlert.properties.status,
                         layers: [],
                         isAddedToMap: true,
+                        isHighlighted: false,
                     };
 
                     temporaryListOfAlerts.push(alert);
@@ -371,8 +381,8 @@
                             weight: 2,
                         });
 
-                        layer.on('mouseover', () => layer.setStyle({ weight: 4 }));
-                        layer.on('mouseout', () => layer.setStyle({ weight: 2 }));
+                        layer.on('mouseover', () => highlightAlert(alert));
+                        layer.on('mouseout', () => unHighlightAlert(alert));
 
                         const description = nwsAlert.properties.description;
 
@@ -523,6 +533,11 @@
     .alert {
         padding-left: 7px;
         border-left: 5px solid;
+        padding-left: 10px;
+    }
+    .highlightedAlert{
+        border-left: 10px solid;
+        padding-left: 5px;
     }
     .mobile-alert-ui {
         display: flex;
