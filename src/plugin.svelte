@@ -111,7 +111,7 @@
                     Description: {alert.description}
                 </div>
                 <div class="noWrap" title={alert.instruction}>
-                    Instruction: {alert.instruction ?? "None"}
+                    Instruction: {alert.instruction ?? 'None'}
                 </div>
             </div>
         {/each}
@@ -160,6 +160,8 @@
     let lastRefresh: Date | null = null;
     let timeAgo: string = 'Loading...'; // Placeholder text
     let radarTimestamp: Date = new Date();
+    let radarCalendarStart: Date = new Date();
+    let radarCalendarEnd: Date = new Date();
 
     // Alert filters (https://www.weather.gov/nwr/eventcodes)
     let includeStormEvents = true;
@@ -319,7 +321,11 @@
         displayedAlerts = [];
         lastRefresh = null;
 
-        fetch('https://api.weather.gov/alerts/active')
+        // TODO Revisit pulling older alerts
+        //const fetchURL = 'https://api.weather.gov/alerts?start=' + radarCalendarStart.toISOString() + "&end=" + radarCalendarEnd.toISOString();
+        //console.log("Fetching from: ", fetchURL);
+        const fetchURL = 'https://api.weather.gov/alerts/active';
+        fetch(fetchURL)
             .then(response => response.json())
             .then(result => result.features)
             .then((nwsAlerts: NWSAlert[]) => {
@@ -390,7 +396,7 @@
             })
             .catch(reason => {
                 lastRefresh = null;
-                timeAgo = "Error fetching alerts. Try again later.";
+                timeAgo = 'Error fetching alerts. Try again later.';
                 console.error(reason);
             });
     };
@@ -474,6 +480,24 @@
         filtersChanged();
     };
 
+    const radarCalendarChanged = (info: any) => {
+        console.log(info);
+        let calendarChanged = false;
+        let calendarStart = new Date(info.start);
+        if (radarCalendarStart.getTime() !== calendarStart.getTime()) {
+            radarCalendarStart = calendarStart;
+            calendarChanged = true;
+            console.log('Calendar Start: ', calendarStart);
+        }
+
+        let calendarEnd = new Date(info.end);
+        if (radarCalendarEnd.getTime() !== calendarEnd.getTime()) {
+            radarCalendarEnd = calendarEnd;
+            calendarChanged = true;
+            console.log('Calendar End: ', calendarEnd);
+        }
+    };
+
     export const onopen = () => {
         loadAlerts();
     };
@@ -482,6 +506,8 @@
         map.on('zoomend', mapMoved);
         map.on('moveend', mapMoved);
         store.on('radarTimestamp', time => radarTimestampChanged(time));
+        store.on('radarCalendar', info => radarCalendarChanged(info));
+        radarCalendarChanged(store.get('radarCalendar'));
     });
 
     onDestroy(() => {
