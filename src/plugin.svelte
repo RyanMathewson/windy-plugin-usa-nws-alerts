@@ -36,58 +36,46 @@
                     Last Refresh: {timeAgo}
                 </div>
             </div>
-            <ul style="list-style-type: none;">
-                <li>
-                    <label>
-                        <input
-                            type="checkbox"
-                            bind:checked={includeStormEvents}
-                            on:change={filtersChanged}
-                        />
-                        Storms & Tornados
-                    </label>
-                </li>
-                <li>
-                    <label>
-                        <input
-                            type="checkbox"
-                            bind:checked={includeWindEvents}
-                            on:change={filtersChanged}
-                        />
-                        Wind & Dust
-                    </label>
-                </li>
-                <li>
-                    <label>
-                        <input
-                            type="checkbox"
-                            bind:checked={includeFloodEvents}
-                            on:change={filtersChanged}
-                        />
-                        Floods
-                    </label>
-                </li>
-                <li>
-                    <label>
-                        <input
-                            type="checkbox"
-                            bind:checked={includeWinterEvents}
-                            on:change={filtersChanged}
-                        />
-                        Winter & Snow
-                    </label>
-                </li>
-                <li>
-                    <label>
-                        <input
-                            type="checkbox"
-                            bind:checked={includeOtherEvents}
-                            on:change={filtersChanged}
-                        />
-                        Other
-                    </label>
-                </li>
-            </ul>
+            <label>
+                <input
+                    type="checkbox"
+                    bind:checked={includeStormEvents}
+                    on:change={filtersChanged}
+                />
+                Storms & Tornados
+            </label>
+            <label>
+                <input
+                    type="checkbox"
+                    bind:checked={includeWindEvents}
+                    on:change={filtersChanged}
+                />
+                Wind & Dust
+            </label>
+            <label>
+                <input
+                    type="checkbox"
+                    bind:checked={includeFloodEvents}
+                    on:change={filtersChanged}
+                />
+                Floods
+            </label>
+            <label>
+                <input
+                    type="checkbox"
+                    bind:checked={includeWinterEvents}
+                    on:change={filtersChanged}
+                />
+                Winter & Snow
+            </label>
+            <label>
+                <input
+                    type="checkbox"
+                    bind:checked={includeOtherEvents}
+                    on:change={filtersChanged}
+                />
+                Other
+            </label>
         </div>
         {#each displayedAlerts as alert (alert.id)}
             <div
