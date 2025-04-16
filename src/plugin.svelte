@@ -21,7 +21,7 @@
             class="plugin__title plugin__title--chevron-back"
             on:click={() => bcast.emit('rqstOpen', 'menu')}
         >
-            USA NWS Alerts
+            {title}
         </div>
         <div class="menu-top rounded-box rounded-box--with-border mm-section mb-10">
             <div class="button button--variant-orange size-s" on:click={() => loadAlerts()}>
@@ -126,10 +126,14 @@
     import { onMount, onDestroy } from 'svelte';
     import { formatDistanceToNow } from 'date-fns';
     import store from '@windy/store';
+    import { singleclick } from '@windy/singleclick';
+    import config from './pluginConfig';
 
     // IMPORTANT: all types must be imported as `type` otherwise
     // Svelte TS compiler will fail
     import type { NWSAlert } from './nws';
+
+    const { name, title } = config;
 
     interface DisplayedAlert {
         id: string;
@@ -412,7 +416,10 @@
 
                             // Scroll the alert into view
                             if (alert.divElement) {
-                                alert.divElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                alert.divElement.scrollIntoView({
+                                    behavior: 'smooth',
+                                    block: 'center',
+                                });
                             }
                         });
 
@@ -544,6 +551,9 @@
         store.on('radarTimestamp', time => radarTimestampChanged(time));
         store.on('radarCalendar', info => radarCalendarChanged(info));
         radarCalendarChanged(store.get('radarCalendar'));
+
+        // Intercept single clicks and do nothing so the Windy picker doesn't come up
+        singleclick.on(name, ev => {});
     });
 
     onDestroy(() => {
