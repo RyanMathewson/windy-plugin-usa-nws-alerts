@@ -10,8 +10,7 @@
                     {alert.event}
                 </div>
                 <div class="nowrap">
-                    Severity: {alert.severity}<br />
-                    Headline: {alert.headline}°
+                    {alert.headline}°
                 </div>
             </div>
         {/each}
@@ -89,6 +88,7 @@
                 class="alert mb-20 size-xs clickable"
                 class:highlightedAlert={alert.isHighlighted}
                 style:border-left-color={colorFromSeverity(alert.severity)}
+                use:setDivElement={alert}
                 on:click={() => focusOnAlert(alert)}
                 on:mouseenter={() => highlightAlert(alert)}
                 on:mouseleave={() => unHighlightAlert(alert)}
@@ -154,6 +154,7 @@
         severityLevel: number;
         center?: L.LatLng;
         bounds?: L.LatLngBounds;
+        divElement?: HTMLDivElement | null;
     }
 
     let allAlerts: DisplayedAlert[] = [];
@@ -236,6 +237,17 @@
         'Volcano Warning',
     ];
 
+    // TODO auto scroll to highlighted alerts. Doesn't behave well.
+    /*
+    $: {
+        for (const alert of displayedAlerts) {
+            if (alert.isHighlighted && alert.divElement) {
+                alert.divElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    }
+    */
+
     const displayPopup = (message: string, location: L.LatLngExpression) => {
         openedPopup?.remove();
 
@@ -244,6 +256,15 @@
             .setContent(message)
             .openOn(map);
     };
+
+    function setDivElement(node: HTMLDivElement, alert: DisplayedAlert) {
+        alert.divElement = node;
+        return {
+            destroy() {
+                alert.divElement = null;
+            },
+        };
+    }
 
     function colorFromSeverity(severity: string): string {
         let hue = 0;
@@ -307,7 +328,7 @@
                 layer.setStyle({ weight: 4 });
             }
             alert.isHighlighted = true;
-            displayedAlerts = [...displayedAlerts]
+            displayedAlerts = [...displayedAlerts];
         }
     };
 
@@ -318,7 +339,7 @@
             }
 
             alert.isHighlighted = false;
-            displayedAlerts = [...displayedAlerts]
+            displayedAlerts = [...displayedAlerts];
         }
     };
 
@@ -386,9 +407,14 @@
 
                         const description = nwsAlert.properties.description;
 
-                        layer.on('click', () =>
-                            displayPopup(description, layer.getBounds().getCenter()),
-                        );
+                        layer.on('click', () => {
+                            displayPopup(description, layer.getBounds().getCenter());
+
+                            // Scroll the alert into view
+                            if (alert.divElement) {
+                                alert.divElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        });
 
                         map.addLayer(layer);
                         alert.layers.push(layer);
@@ -535,7 +561,7 @@
         border-left: 5px solid;
         padding-left: 10px;
     }
-    .highlightedAlert{
+    .highlightedAlert {
         border-left: 10px solid;
         padding-left: 5px;
     }
