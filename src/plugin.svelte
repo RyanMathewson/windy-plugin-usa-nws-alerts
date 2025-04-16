@@ -36,46 +36,51 @@
                     Last Refresh: {timeAgo}
                 </div>
             </div>
-            <label>
-                <input
-                    type="checkbox"
-                    bind:checked={includeStormEvents}
-                    on:change={filtersChanged}
-                />
+            <div
+                class="checkbox {includeStormEvents ? '' : 'checkbox--off'}"
+                on:click={() => {
+                    includeStormEvents = !includeStormEvents;
+                    filtersChanged();
+                }}
+            >
                 Storms & Tornados
-            </label>
-            <label>
-                <input
-                    type="checkbox"
-                    bind:checked={includeWindEvents}
-                    on:change={filtersChanged}
-                />
+            </div>
+            <div
+                class="checkbox {includeWindEvents ? '' : 'checkbox--off'}"
+                on:click={() => {
+                    includeWindEvents = !includeWindEvents;
+                    filtersChanged();
+                }}
+            >
                 Wind & Dust
-            </label>
-            <label>
-                <input
-                    type="checkbox"
-                    bind:checked={includeFloodEvents}
-                    on:change={filtersChanged}
-                />
+            </div>
+            <div
+                class="checkbox {includeFloodEvents ? '' : 'checkbox--off'}"
+                on:click={() => {
+                    includeFloodEvents = !includeFloodEvents;
+                    filtersChanged();
+                }}
+            >
                 Floods
-            </label>
-            <label>
-                <input
-                    type="checkbox"
-                    bind:checked={includeWinterEvents}
-                    on:change={filtersChanged}
-                />
+            </div>
+            <div
+                class="checkbox {includeWinterEvents ? '' : 'checkbox--off'}"
+                on:click={() => {
+                    includeWinterEvents = !includeWinterEvents;
+                    filtersChanged();
+                }}
+            >
                 Winter & Snow
-            </label>
-            <label>
-                <input
-                    type="checkbox"
-                    bind:checked={includeOtherEvents}
-                    on:change={filtersChanged}
-                />
+            </div>
+            <div
+                class="checkbox {includeOtherEvents ? '' : 'checkbox--off'}"
+                on:click={() => {
+                    includeOtherEvents = !includeOtherEvents;
+                    filtersChanged();
+                }}
+            >
                 Other
-            </label>
+            </div>
         </div>
         {#each displayedAlerts as alert (alert.id)}
             <div
