@@ -24,13 +24,19 @@
             {title}
         </div>
         <div class="menu-top rounded-box rounded-box--with-border mm-section mb-10">
-            <div class="button button--variant-orange size-s" on:click={() => loadAlerts()}>
-                Refresh
+            <div class="mb-10">
+                <div
+                    class="button button--variant-orange size-s"
+                    style="display:inline;"
+                    on:click={() => loadAlerts()}
+                >
+                    Refresh
+                </div>
+                <div class="size-s" style="display:inline;">
+                    Last Refresh: {timeAgo}
+                </div>
             </div>
-            <div class="size-s">
-                Last Refresh: {timeAgo}
-            </div>
-            <ul style="list-style-type: none">
+            <ul style="list-style-type: none;">
                 <li>
                     <label>
                         <input
