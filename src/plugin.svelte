@@ -1,5 +1,16 @@
 {#if isMobileOrTablet}
     <section class="mobile-alert-ui horizontal-scroll">
+        <div class="mb-10">
+            <div
+                class="button button--variant-orange size-s"
+                on:click={() => loadAlerts()}
+            >
+                Refresh
+            </div>
+            <div class="size-s">
+                Last Refresh: {timeAgo}
+            </div>
+        </div>
         {#each displayedAlerts as alert}
             <div
                 class="alert mr-20 size-xs clickable"
@@ -577,7 +588,7 @@
     .mobile-alert-ui {
         display: flex;
         flex-direction: row;
-        align-items: center;
+        align-items: stretch;
         overflow: auto;
     }
     .noWrap {
