@@ -10,7 +10,7 @@
                     {alert.event}
                 </div>
                 <div class="nowrap">
-                    {alert.headline}°
+                    {alert.headline}
                 </div>
             </div>
         {/each}
