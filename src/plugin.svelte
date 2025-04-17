@@ -459,10 +459,11 @@
 
         // Remove all of our alert layers
         for (var alert of allAlerts) {
+            if(!alert.isAddedToMap){
+                continue;
+            }
             for (var layer of alert.layers) {
-                if (map.hasLayer(layer)) {
-                    layer.removeFrom(map);
-                }
+                layer.removeFrom(map);
             }
             alert.isAddedToMap = false;
         }
