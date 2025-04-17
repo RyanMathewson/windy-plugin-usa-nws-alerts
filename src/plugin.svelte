@@ -472,10 +472,12 @@
     const filtersChanged = () => {
         let anyChanges = false;
         let includedAlerts = [];
+        const targetTimestamp = new Date();
+        // const targetTimestamp = radarTimestamp; TODO Disabled radar timestamp based filtering
         for (let alert of allAlerts) {
             if (
-                alert.effective <= radarTimestamp &&
-                alert.expires >= radarTimestamp &&
+                alert.effective <= targetTimestamp &&
+                alert.expires >= targetTimestamp &&
                 ((includeFloodEvents && floodAlertEvents.includes(alert.event)) ||
                     (includeStormEvents && stormAlertEvents.includes(alert.event)) ||
                     (includeWindEvents && windAlertEvents.includes(alert.event)) ||
@@ -531,7 +533,7 @@
     const radarTimestampChanged = (time: number) => {
         // Filter the alerts based on the current radar timestamp
         radarTimestamp = new Date(time);
-        filtersChanged();
+        // filtersChanged(); // TODO Disabled radar timestamp based filtering
     };
 
     const radarCalendarChanged = (info: any) => {
