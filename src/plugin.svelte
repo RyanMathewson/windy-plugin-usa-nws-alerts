@@ -7,6 +7,51 @@
             <div class="size-s">
                 Last Refresh: {timeAgo}
             </div>
+            <div
+                class="noWrap checkbox {includeStormEvents ? '' : 'checkbox--off'}"
+                on:click={() => {
+                    includeStormEvents = !includeStormEvents;
+                    filtersChanged();
+                }}
+            >
+                Storms & Tornados
+            </div>
+            <div
+                class="noWrap checkbox {includeWindEvents ? '' : 'checkbox--off'}"
+                on:click={() => {
+                    includeWindEvents = !includeWindEvents;
+                    filtersChanged();
+                }}
+            >
+                Wind & Dust
+            </div>
+            <div
+                class="noWrap checkbox {includeFloodEvents ? '' : 'checkbox--off'}"
+                on:click={() => {
+                    includeFloodEvents = !includeFloodEvents;
+                    filtersChanged();
+                }}
+            >
+                Floods
+            </div>
+            <div
+                class="noWrap checkbox {includeWinterEvents ? '' : 'checkbox--off'}"
+                on:click={() => {
+                    includeWinterEvents = !includeWinterEvents;
+                    filtersChanged();
+                }}
+            >
+                Winter & Snow
+            </div>
+            <div
+                class="noWrap checkbox {includeOtherEvents ? '' : 'checkbox--off'}"
+                on:click={() => {
+                    includeOtherEvents = !includeOtherEvents;
+                    filtersChanged();
+                }}
+            >
+                Other
+            </div>
         </div>
         {#each displayedAlerts as alert}
             <div
@@ -45,7 +90,7 @@
                 </div>
             </div>
             <div
-                class="checkbox {includeStormEvents ? '' : 'checkbox--off'}"
+                class="noWrap checkbox {includeStormEvents ? '' : 'checkbox--off'}"
                 on:click={() => {
                     includeStormEvents = !includeStormEvents;
                     filtersChanged();
@@ -54,7 +99,7 @@
                 Storms & Tornados
             </div>
             <div
-                class="checkbox {includeWindEvents ? '' : 'checkbox--off'}"
+                class="noWrap checkbox {includeWindEvents ? '' : 'checkbox--off'}"
                 on:click={() => {
                     includeWindEvents = !includeWindEvents;
                     filtersChanged();
@@ -63,7 +108,7 @@
                 Wind & Dust
             </div>
             <div
-                class="checkbox {includeFloodEvents ? '' : 'checkbox--off'}"
+                class="noWrap checkbox {includeFloodEvents ? '' : 'checkbox--off'}"
                 on:click={() => {
                     includeFloodEvents = !includeFloodEvents;
                     filtersChanged();
@@ -72,7 +117,7 @@
                 Floods
             </div>
             <div
-                class="checkbox {includeWinterEvents ? '' : 'checkbox--off'}"
+                class="noWrap checkbox {includeWinterEvents ? '' : 'checkbox--off'}"
                 on:click={() => {
                     includeWinterEvents = !includeWinterEvents;
                     filtersChanged();
@@ -81,7 +126,7 @@
                 Winter & Snow
             </div>
             <div
-                class="checkbox {includeOtherEvents ? '' : 'checkbox--off'}"
+                class="noWrap checkbox {includeOtherEvents ? '' : 'checkbox--off'}"
                 on:click={() => {
                     includeOtherEvents = !includeOtherEvents;
                     filtersChanged();
