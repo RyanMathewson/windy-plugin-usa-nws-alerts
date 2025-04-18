@@ -148,8 +148,8 @@
                 <div class="size-l mb-5">
                     {alert.event}
                 </div>
-                <div>
-                    <span title="Certainty">{alert.certainty}</span> / <span title="Urgency">{alert.urgency}</span> / <span title="Status">{alert.status}</span>
+                <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: column;">
+                    <div>Certainty: {alert.certainty}</div><div>Urgency: {alert.urgency}</div><div>Status: {alert.status}</div>
                 </div>
                 <div class="noWrap">
                     Area: {alert.areaDesc}
