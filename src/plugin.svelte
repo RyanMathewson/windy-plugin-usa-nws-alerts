@@ -1,10 +1,7 @@
 {#if isMobileOrTablet}
     <section class="mobile-alert-ui horizontal-scroll">
         <div class="mb-10">
-            <div
-                class="button button--variant-orange size-s"
-                on:click={() => loadAlerts()}
-            >
+            <div class="button button--variant-orange size-s" on:click={() => loadAlerts()}>
                 Refresh
             </div>
             <div class="size-s">
@@ -107,7 +104,7 @@
                     {alert.event}
                 </div>
                 <div>
-                    Headline: {alert.headline}°
+                    <span title="Certainty">{alert.certainty}</span> / <span title="Urgency">{alert.urgency}</span> / <span title="Status">{alert.status}</span>
                 </div>
                 <div class="noWrap">
                     Area: {alert.areaDesc}
@@ -119,10 +116,10 @@
                     Sender: {alert.senderName} ({alert.sender})
                 </div>
                 <div class="noWrap" title={alert.description}>
-                    Description: {alert.description}
+                    Description: <span class="hasTitle">{alert.description}</span>
                 </div>
                 <div class="noWrap" title={alert.instruction}>
-                    Instruction: {alert.instruction ?? 'None'}
+                    Instruction: <span class="hasTitle">{alert.instruction ?? 'None'}</span>
                 </div>
             </div>
         {/each}
@@ -459,7 +456,7 @@
 
         // Remove all of our alert layers
         for (var alert of allAlerts) {
-            if(!alert.isAddedToMap){
+            if (!alert.isAddedToMap) {
                 continue;
             }
             for (var layer of alert.layers) {
@@ -596,5 +593,8 @@
     }
     .noWrap {
         text-wrap: nowrap;
+    }
+    .hasTitle {
+        text-decoration: underline dotted;
     }
 </style>
