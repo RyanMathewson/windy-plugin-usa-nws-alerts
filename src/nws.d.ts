@@ -11,6 +11,8 @@ export interface NWSAlert {
       areaDesc: string;
       effective: string;
       expires: string;
+      sent: string;
+      ends: string;
       status: string;
       messageType: string;
       category: string;

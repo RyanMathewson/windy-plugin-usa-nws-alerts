@@ -112,7 +112,7 @@
                 <div class="noWrap">
                     Time: {formatDate(alert.effective)} - {formatDate(alert.expires)}
                 </div>
-                <div class="noWrap">
+                <div class="noWrap" title={'Sent: ' + formatDate(alert.sent)}>
                     Sender: {alert.senderName} ({alert.sender})
                 </div>
                 <div class="noWrap" title={alert.description}>
@@ -151,6 +151,8 @@
         areaDesc: string;
         effective: Date;
         expires: Date;
+        sent: Date;
+        ends: Date;
         sender: string;
         senderName: string;
         certainty: string;
@@ -387,6 +389,8 @@
                         headline: nwsAlert.properties.headline,
                         effective: new Date(nwsAlert.properties.effective),
                         expires: new Date(nwsAlert.properties.expires),
+                        sent: new Date(nwsAlert.properties.sent),
+                        ends: new Date(nwsAlert.properties.ends),
                         sender: nwsAlert.properties.sender,
                         senderName: nwsAlert.properties.senderName,
                         certainty: nwsAlert.properties.certainty,
