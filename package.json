@@ -1,6 +1,6 @@
 {
     "name": "windy-plugin-usa-nws-alerts",
-    "version": "0.0.1",
+    "version": "1.0.0",
     "description": "A plugin for Windy which displays USA National Weather Service alerts",
     "main": "dist/plugin.min.js",
     "type": "module",
