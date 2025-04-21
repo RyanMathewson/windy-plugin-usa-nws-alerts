@@ -148,8 +148,12 @@
                 <div class="size-l mb-5">
                     {alert.event}
                 </div>
-                <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: column;">
-                    <div>Certainty: {alert.certainty}</div><div>Urgency: {alert.urgency}</div><div>Status: {alert.status}</div>
+                <div
+                    style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: column;"
+                >
+                    <div>Certainty: {alert.certainty}</div>
+                    <div>Urgency: {alert.urgency}</div>
+                    <div>Status: {alert.status}</div>
                 </div>
                 <div class="noWrap">
                     Area: {alert.areaDesc}
@@ -177,6 +181,7 @@
     import { isMobileOrTablet } from '@windy/rootScope';
     import { onMount, onDestroy } from 'svelte';
     import { formatDistanceToNow } from 'date-fns';
+    import * as pako from 'pako';
     import store from '@windy/store';
     import { singleclick } from '@windy/singleclick';
     import config from './pluginConfig';
@@ -184,6 +189,15 @@
     // IMPORTANT: all types must be imported as `type` otherwise
     // Svelte TS compiler will fail
     import type { NWSAlert } from './nws';
+    // import { Layer } from '@windy/client/Layer';
+
+    // Used for fetching/caching UGC zones
+    type Geometry = GeoJSON.Geometry;
+    type Feature = GeoJSON.Feature;
+    const CDN_BASE =
+        'https://cdn.jsdelivr.net/gh/RyanMathewson/public-forecast-zones@8306709/z_18mr25';
+    const stateCache: Record<string, Feature[]> = {};
+    const ugcCache: Record<string, Geometry> = {};
 
     const { name, title } = config;
 
@@ -306,6 +320,48 @@
     }
     */
 
+    export async function getGeometryForUGC(ugcCode: string): Promise<Geometry | null> {
+        if (ugcCache[ugcCode]) {
+            return ugcCache[ugcCode];
+        }
+
+        // Extract state prefix from UGC code (e.g. "KSZ072" -> "KS")
+        const state = ugcCode.slice(0, 2).toUpperCase();
+
+        // Load and cache the state data if needed
+        if (!stateCache[state]) {
+            const url = `${CDN_BASE}/${state}.geojson.gz`;
+
+            try {
+                const response = await fetch(url);
+                const compressed = await response.arrayBuffer();
+                const jsonString = pako.ungzip(new Uint8Array(compressed), { to: 'string' });
+                const geojson = JSON.parse(jsonString);
+
+                if (geojson?.features) {
+                    stateCache[state] = geojson.features;
+                } else {
+                    console.warn(`No features found in ${state}.geojson.gz`);
+                    return null;
+                }
+            } catch (err) {
+                console.error(`Failed to load or parse ${state}.geojson.gz`, err);
+                return null;
+            }
+        }
+
+        // Search for the specific UGC feature in cached data
+        const feature = stateCache[state].find(f => f.properties?.UGC === ugcCode);
+
+        if (feature) {
+            ugcCache[ugcCode] = feature.geometry;
+            return feature.geometry;
+        } else {
+            console.warn(`UGC ${ugcCode} not found in ${state}.geojson.gz`);
+            return null;
+        }
+    }
+
     const displayPopup = (message: string, location: L.LatLngExpression) => {
         openedPopup?.remove();
 
@@ -401,7 +457,7 @@
         }
     };
 
-    const loadAlerts = () => {
+    async function loadAlerts() {
         // Clear the map
         removeAllMapFeatures();
         allAlerts = [];
@@ -412,93 +468,102 @@
         //const fetchURL = 'https://api.weather.gov/alerts?start=' + radarCalendarStart.toISOString() + "&end=" + radarCalendarEnd.toISOString();
         //console.log("Fetching from: ", fetchURL);
         const fetchURL = 'https://api.weather.gov/alerts/active';
-        fetch(fetchURL)
-            .then(response => response.json())
-            .then(result => result.features)
-            .then((nwsAlerts: NWSAlert[]) => {
-                lastRefresh = new Date();
-                const temporaryListOfAlerts: DisplayedAlert[] = [];
 
-                for (var nwsAlert of nwsAlerts) {
-                    if (nwsAlert.geometry == null || nwsAlert.geometry.type !== 'Polygon') {
-                        continue; // Unsupported alert
-                    }
+        try {
+            const response = await fetch(fetchURL);
+            const data = await response.json();
+            const nwsAlerts: NWSAlert[] = data.features;
 
-                    const alert: DisplayedAlert = {
-                        id: nwsAlert.properties['@id'],
-                        severity: nwsAlert.properties.severity,
-                        severityLevel: levelFromSeverity(nwsAlert.properties.severity),
-                        event: nwsAlert.properties.event,
-                        description: nwsAlert.properties.description,
-                        areaDesc: nwsAlert.properties.areaDesc,
-                        headline: nwsAlert.properties.headline,
-                        effective: new Date(nwsAlert.properties.effective),
-                        expires: new Date(nwsAlert.properties.expires),
-                        sent: new Date(nwsAlert.properties.sent),
-                        ends: new Date(nwsAlert.properties.ends),
-                        sender: nwsAlert.properties.sender,
-                        senderName: nwsAlert.properties.senderName,
-                        certainty: nwsAlert.properties.certainty,
-                        category: nwsAlert.properties.category,
-                        instruction: nwsAlert.properties.instruction,
-                        messageType: nwsAlert.properties.messageType,
-                        urgency: nwsAlert.properties.urgency,
-                        status: nwsAlert.properties.status,
-                        layers: [],
-                        isAddedToMap: true,
-                        isHighlighted: false,
-                    };
+            lastRefresh = new Date();
+            const temporaryListOfAlerts: DisplayedAlert[] = [];
 
-                    temporaryListOfAlerts.push(alert);
+            for (const nwsAlert of nwsAlerts) {
+                const alert: DisplayedAlert = {
+                    id: nwsAlert.properties['@id'],
+                    severity: nwsAlert.properties.severity,
+                    severityLevel: levelFromSeverity(nwsAlert.properties.severity),
+                    event: nwsAlert.properties.event,
+                    description: nwsAlert.properties.description,
+                    areaDesc: nwsAlert.properties.areaDesc,
+                    headline: nwsAlert.properties.headline,
+                    effective: new Date(nwsAlert.properties.effective),
+                    expires: new Date(nwsAlert.properties.expires),
+                    sent: new Date(nwsAlert.properties.sent),
+                    ends: new Date(nwsAlert.properties.ends),
+                    sender: nwsAlert.properties.sender,
+                    senderName: nwsAlert.properties.senderName,
+                    certainty: nwsAlert.properties.certainty,
+                    category: nwsAlert.properties.category,
+                    instruction: nwsAlert.properties.instruction,
+                    messageType: nwsAlert.properties.messageType,
+                    urgency: nwsAlert.properties.urgency,
+                    status: nwsAlert.properties.status,
+                    layers: [],
+                    isAddedToMap: true,
+                    isHighlighted: false,
+                };
 
-                    const color = colorFromSeverity(nwsAlert.properties.severity);
-                    for (var geometry of nwsAlert.geometry.coordinates) {
-                        const track: L.LatLngExpression[] = [];
-                        for (var point of geometry) {
-                            track.push([point[1], point[0]]); // Swap coordinates to match what Windy expects
-                        }
-                        const layer = new L.Polyline(track, {
-                            color,
-                            weight: 2,
-                        });
+                const color = colorFromSeverity(nwsAlert.properties.severity);
 
-                        layer.on('mouseover', () => highlightAlert(alert));
-                        layer.on('mouseout', () => unHighlightAlert(alert));
-
-                        const description = nwsAlert.properties.description;
-
-                        layer.on('click', () => {
-                            displayPopup(description, layer.getBounds().getCenter());
-
-                            // Scroll the alert into view
-                            if (alert.divElement) {
-                                alert.divElement.scrollIntoView({
-                                    behavior: 'smooth',
-                                    block: 'center',
-                                });
-                            }
-                        });
-
-                        map.addLayer(layer);
+                if (nwsAlert.geometry?.type === 'Polygon') {
+                    for (const coordinate of nwsAlert.geometry.coordinates) {
+                        const track: L.LatLngExpression[] = coordinate.map(
+                            (point: number[]) => [point[1], point[0]], // swap lat/lon
+                        );
+                        const layer = new L.Polyline(track);
                         alert.layers.push(layer);
-
-                        // TODO We are only saving these from the last layer
-                        alert.center = layer.getCenter();
-                        alert.bounds = layer.getBounds();
                     }
+                } else if (nwsAlert.properties.geocode.UGC) {
+                    for (const ugcCode of nwsAlert.properties.geocode.UGC) {
+                        const geometry = await getGeometryForUGC(ugcCode);
+                        if (geometry?.type === 'Polygon') {
+                            const coordinates = (geometry as GeoJSON.Polygon).coordinates;
+                            for (const coordinate of coordinates) {
+                                const track: L.LatLngExpression[] = coordinate.map(
+                                    (point: number[]) => [point[1], point[0]],
+                                );
+                                const layer = new L.Polyline(track);
+                                alert.layers.push(layer);
+                            }
+                        } else {
+                            console.warn(
+                                `Unsupported geometry type or missing geometry for ${ugcCode}`,
+                            );
+                        }
+                    }
+                } else {
+                    console.log('Unsupported alert: ', nwsAlert);
+                    continue;
                 }
 
-                // Update our local list of alerts
-                allAlerts = temporaryListOfAlerts.sort((a, b) => a.severityLevel - b.severityLevel);
+                temporaryListOfAlerts.push(alert);
 
-                filtersChanged();
-            })
-            .catch(reason => {
-                lastRefresh = null;
-                timeAgo = 'Error fetching alerts. Try again later.';
-                console.error(reason);
-            });
-    };
+                for (const layer of alert.layers) {
+                    layer.setStyle({ color, weight: 2 });
+
+                    layer.on('mouseover', () => highlightAlert(alert));
+                    layer.on('mouseout', () => unHighlightAlert(alert));
+
+                    layer.on('click', () => {
+                        displayPopup(alert.description, layer.getBounds().getCenter());
+                        alert.divElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    });
+
+                    map.addLayer(layer);
+
+                    alert.center = layer.getCenter();
+                    alert.bounds = layer.getBounds();
+                }
+            }
+
+            allAlerts = temporaryListOfAlerts.sort((a, b) => a.severityLevel - b.severityLevel);
+            filtersChanged();
+        } catch (reason) {
+            lastRefresh = null;
+            timeAgo = 'Error fetching alerts. Try again later.';
+            console.error(reason);
+        }
+    }
 
     const removeAllMapFeatures = () => {
         openedPopup?.remove();

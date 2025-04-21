@@ -26,6 +26,9 @@ export interface NWSAlert {
       description: string;
       instruction: string;
       web: string;
+      geocode: {
+        UGC: string[];
+      }
       parameters: {
         AWIPSidentifier: string[];
         WMOidentifier: string[];
