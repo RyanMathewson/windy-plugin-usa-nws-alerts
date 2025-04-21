@@ -148,8 +148,12 @@
                 <div class="size-l mb-5">
                     {alert.event}
                 </div>
-                <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: column;">
-                    <div>Certainty: {alert.certainty}</div><div>Urgency: {alert.urgency}</div><div>Status: {alert.status}</div>
+                <div
+                    style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: column;"
+                >
+                    <div>Certainty: {alert.certainty}</div>
+                    <div>Urgency: {alert.urgency}</div>
+                    <div>Status: {alert.status}</div>
                 </div>
                 <div class="noWrap">
                     Area: {alert.areaDesc}
@@ -401,6 +405,21 @@
         }
     };
 
+    function getGeometryForUGC(ugcCode: string): NWSAlert | null {
+        if (!/^[a-zA-Z0-9]+$/.test(ugcCode)) {
+            throw new Error('Malformed UGC code');
+        }
+        fetch('https://api.weather.gov/zones/land/' + ugcCode)
+            .then(response => response.json())
+            .then(result => {
+                return result.geometry as NWSAlert;
+            })
+            .catch(reason => {
+                console.log("Failed to fetch geometry for UGC code '" + ugcCode + "'", reason);
+            });
+        return null;
+    }
+
     const loadAlerts = () => {
         // Clear the map
         removeAllMapFeatures();
@@ -420,10 +439,6 @@
                 const temporaryListOfAlerts: DisplayedAlert[] = [];
 
                 for (var nwsAlert of nwsAlerts) {
-                    if (nwsAlert.geometry == null || nwsAlert.geometry.type !== 'Polygon') {
-                        continue; // Unsupported alert
-                    }
-
                     const alert: DisplayedAlert = {
                         id: nwsAlert.properties['@id'],
                         severity: nwsAlert.properties.severity,
@@ -449,19 +464,49 @@
                         isHighlighted: false,
                     };
 
+                    const color = colorFromSeverity(nwsAlert.properties.severity);
+
+                    if (nwsAlert.geometry !== null && nwsAlert.geometry.type == 'Polygon') {
+                        for (let coordinate of nwsAlert.geometry.coordinates) {
+                            const track: L.LatLngExpression[] = [];
+                            for (let point of coordinate) {
+                                track.push([point[1], point[0]]); // Swap coordinates to match what Windy expects
+                            }
+                            const layer = new L.Polyline(track, {
+                                color,
+                                weight: 2,
+                            });
+
+                            alert.layers.push(layer);
+                        }
+                    } else if (nwsAlert.properties.geocode.UGC) {
+                        for (let ugcCode of nwsAlert.properties.geocode.UGC) {
+                            let bla = getGeometryForUGC(ugcCode);
+                            if (!bla) {
+                                continue; // Failed to fetch geometry
+                            }
+                            for (let coordinate of bla.geometry.coordinates) {
+                            const track: L.LatLngExpression[] = [];
+                            for (let point of coordinate) {
+                                track.push([point[1], point[0]]); // Swap coordinates to match what Windy expects
+                            }
+                            const layer = new L.Polyline(track, {
+                                color,
+                                weight: 2,
+                            });
+
+                            alert.layers.push(layer);
+                        }
+                        }
+                    } else {
+                        // We can't determine the geometry of this alert
+                        continue;
+                    }
+
                     temporaryListOfAlerts.push(alert);
 
-                    const color = colorFromSeverity(nwsAlert.properties.severity);
-                    for (var geometry of nwsAlert.geometry.coordinates) {
-                        const track: L.LatLngExpression[] = [];
-                        for (var point of geometry) {
-                            track.push([point[1], point[0]]); // Swap coordinates to match what Windy expects
-                        }
-                        const layer = new L.Polyline(track, {
-                            color,
-                            weight: 2,
-                        });
-
+                    // Add layers to map
+                    for (let layer of alert.layers) {
                         layer.on('mouseover', () => highlightAlert(alert));
                         layer.on('mouseout', () => unHighlightAlert(alert));
 
@@ -480,7 +525,6 @@
                         });
 
                         map.addLayer(layer);
-                        alert.layers.push(layer);
 
                         // TODO We are only saving these from the last layer
                         alert.center = layer.getCenter();
