@@ -26,6 +26,7 @@ export interface NWSAlert {
       description: string;
       instruction: string;
       web: string;
+      affectedZones: string[];
       parameters: {
         AWIPSidentifier: string[];
         WMOidentifier: string[];

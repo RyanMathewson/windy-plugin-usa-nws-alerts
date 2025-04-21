@@ -148,8 +148,12 @@
                 <div class="size-l mb-5">
                     {alert.event}
                 </div>
-                <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: column;">
-                    <div>Certainty: {alert.certainty}</div><div>Urgency: {alert.urgency}</div><div>Status: {alert.status}</div>
+                <div
+                    style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: column;"
+                >
+                    <div>Certainty: {alert.certainty}</div>
+                    <div>Urgency: {alert.urgency}</div>
+                    <div>Status: {alert.status}</div>
                 </div>
                 <div class="noWrap">
                     Area: {alert.areaDesc}
@@ -420,9 +424,7 @@
                 const temporaryListOfAlerts: DisplayedAlert[] = [];
 
                 for (var nwsAlert of nwsAlerts) {
-                    if (nwsAlert.geometry == null || nwsAlert.geometry.type !== 'Polygon') {
-                        continue; // Unsupported alert
-                    }
+                    const color = colorFromSeverity(nwsAlert.properties.severity);
 
                     const alert: DisplayedAlert = {
                         id: nwsAlert.properties['@id'],
@@ -449,15 +451,26 @@
                         isHighlighted: false,
                     };
 
+                    if (nwsAlert.geometry && nwsAlert.geometry.type === 'Polygon') {
+                        for (var geometry of nwsAlert.geometry.coordinates) {
+                            const track: L.LatLngExpression[] = [];
+                            for (var point of geometry) {
+                                track.push([point[1], point[0]]); // Swap coordinates to match what Windy expects
+                            }
+                            alert.layers.push(new L.Polyline(track));
+                        }
+                    } else if (nwsAlert.properties.affectedZones) {
+                        // TODO Look up affected zones
+                    } else {
+                        // Unsupported alert geometry
+                        console.log('Unsupported alert geometry: ', nwsAlert);
+                        continue;
+                    }
+
                     temporaryListOfAlerts.push(alert);
 
-                    const color = colorFromSeverity(nwsAlert.properties.severity);
-                    for (var geometry of nwsAlert.geometry.coordinates) {
-                        const track: L.LatLngExpression[] = [];
-                        for (var point of geometry) {
-                            track.push([point[1], point[0]]); // Swap coordinates to match what Windy expects
-                        }
-                        const layer = new L.Polyline(track, {
+                    for (let layer of alert.layers) {
+                        layer.setStyle({
                             color,
                             weight: 2,
                         });
@@ -480,8 +493,8 @@
                         });
 
                         map.addLayer(layer);
-                        alert.layers.push(layer);
 
+                        // We can only get center and bounds after adding to the map
                         // TODO We are only saving these from the last layer
                         alert.center = layer.getCenter();
                         alert.bounds = layer.getBounds();
