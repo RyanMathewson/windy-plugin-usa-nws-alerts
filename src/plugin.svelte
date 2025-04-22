@@ -181,7 +181,6 @@
     import { isMobileOrTablet } from '@windy/rootScope';
     import { onMount, onDestroy } from 'svelte';
     import { formatDistanceToNow } from 'date-fns';
-    import store from '@windy/store';
     import { singleclick } from '@windy/singleclick';
     import config from './pluginConfig';
 
@@ -225,9 +224,6 @@
     let openedPopup: L.Popup | null = null;
     let lastRefresh: Date | null = null;
     let timeAgo: string = 'Loading...'; // Placeholder text
-    let radarTimestamp: Date = new Date();
-    let radarCalendarStart: Date = new Date();
-    let radarCalendarEnd: Date = new Date();
 
     // Alert filters (https://www.weather.gov/nwr/eventcodes)
     let includeStormEvents = true;
@@ -412,9 +408,6 @@
         displayedAlerts = [];
         lastRefresh = null;
 
-        // TODO Revisit pulling older alerts
-        //const fetchURL = 'https://api.weather.gov/alerts?start=' + radarCalendarStart.toISOString() + "&end=" + radarCalendarEnd.toISOString();
-        //console.log("Fetching from: ", fetchURL);
         const fetchURL = 'https://api.weather.gov/alerts/active';
         fetch(fetchURL)
             .then(response => response.json())
@@ -531,17 +524,13 @@
     const filtersChanged = () => {
         let anyChanges = false;
         let includedAlerts = [];
-        const targetTimestamp = new Date();
-        // const targetTimestamp = radarTimestamp; TODO Disabled radar timestamp based filtering
         for (let alert of allAlerts) {
             if (
-                alert.effective <= targetTimestamp &&
-                alert.expires >= targetTimestamp &&
-                ((includeFloodEvents && floodAlertEvents.includes(alert.event)) ||
-                    (includeStormEvents && stormAlertEvents.includes(alert.event)) ||
-                    (includeWindEvents && windAlertEvents.includes(alert.event)) ||
-                    (includeWinterEvents && winterAlertEvents.includes(alert.event)) ||
-                    (includeOtherEvents && otherAlertEvents.includes(alert.event)))
+                (includeFloodEvents && floodAlertEvents.includes(alert.event)) ||
+                (includeStormEvents && stormAlertEvents.includes(alert.event)) ||
+                (includeWindEvents && windAlertEvents.includes(alert.event)) ||
+                (includeWinterEvents && winterAlertEvents.includes(alert.event)) ||
+                (includeOtherEvents && otherAlertEvents.includes(alert.event))
             ) {
                 includedAlerts.push(alert);
 
@@ -589,30 +578,6 @@
         }
     }, 1000);
 
-    const radarTimestampChanged = (time: number) => {
-        // Filter the alerts based on the current radar timestamp
-        radarTimestamp = new Date(time);
-        // filtersChanged(); // TODO Disabled radar timestamp based filtering
-    };
-
-    const radarCalendarChanged = (info: any) => {
-        console.log(info);
-        let calendarChanged = false;
-        let calendarStart = new Date(info.start);
-        if (radarCalendarStart.getTime() !== calendarStart.getTime()) {
-            radarCalendarStart = calendarStart;
-            calendarChanged = true;
-            console.log('Calendar Start: ', calendarStart);
-        }
-
-        let calendarEnd = new Date(info.end);
-        if (radarCalendarEnd.getTime() !== calendarEnd.getTime()) {
-            radarCalendarEnd = calendarEnd;
-            calendarChanged = true;
-            console.log('Calendar End: ', calendarEnd);
-        }
-    };
-
     export const onopen = () => {
         loadAlerts();
     };
@@ -620,9 +585,6 @@
     onMount(() => {
         map.on('zoomend', mapMoved);
         map.on('moveend', mapMoved);
-        store.on('radarTimestamp', time => radarTimestampChanged(time));
-        store.on('radarCalendar', info => radarCalendarChanged(info));
-        radarCalendarChanged(store.get('radarCalendar'));
 
         // Intercept single clicks and do nothing so the Windy picker doesn't come up
         singleclick.on(name, ev => {});
