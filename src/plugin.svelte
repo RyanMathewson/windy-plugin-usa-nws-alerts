@@ -591,6 +591,9 @@
     });
 
     onDestroy(() => {
+        map.off('zoomend', mapMoved);
+        map.off('moveend', mapMoved);
+
         removeAllMapFeatures();
         clearInterval(lastUpdatedRefreshInterval);
     });
