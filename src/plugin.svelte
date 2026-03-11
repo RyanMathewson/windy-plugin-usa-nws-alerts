@@ -201,7 +201,7 @@
         effective: Date;
         expires: Date;
         sent: Date;
-        ends: Date;
+        ends: Date | null;
         sender: string;
         senderName: string;
         certainty: string;
@@ -209,7 +209,7 @@
         status: string;
         messageType: string;
         category: string;
-        instruction: string;
+        instruction: string | null;
         layers: L.Polyline[];
         isAddedToMap: boolean;
         isHighlighted: boolean;
@@ -453,7 +453,7 @@
                         effective: new Date(nwsAlert.properties.effective),
                         expires: new Date(nwsAlert.properties.expires),
                         sent: new Date(nwsAlert.properties.sent),
-                        ends: new Date(nwsAlert.properties.ends),
+                        ends: nwsAlert.properties.ends ? new Date(nwsAlert.properties.ends) : null,
                         sender: nwsAlert.properties.sender,
                         senderName: nwsAlert.properties.senderName,
                         certainty: nwsAlert.properties.certainty,

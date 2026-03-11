@@ -18,7 +18,7 @@ export interface NWSAlert {
       effective: string;
       expires: string;
       sent: string;
-      ends: string;
+      ends: string | null;
       status: string;
       messageType: string;
       category: string;
@@ -30,7 +30,7 @@ export interface NWSAlert {
       senderName: string;
       headline: string;
       description: string;
-      instruction: string;
+      instruction: string | null;
       web: string;
       affectedZones: string[];
       parameters: {
