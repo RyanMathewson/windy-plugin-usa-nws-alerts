@@ -639,7 +639,7 @@
         overflow: auto;
     }
     .noWrap {
-        text-wrap: nowrap;
+        white-space: nowrap;
     }
     .hasTitle {
         text-decoration: underline dotted;
