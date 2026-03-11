@@ -463,7 +463,7 @@
                         urgency: nwsAlert.properties.urgency,
                         status: nwsAlert.properties.status,
                         layers: [],
-                        isAddedToMap: true,
+                        isAddedToMap: false,
                         isHighlighted: false,
                     };
 
@@ -516,6 +516,7 @@
                         alert.center = layer.getCenter();
                         alert.bounds = layer.getBounds();
                     }
+                    alert.isAddedToMap = true;
                 }
 
                 // Update our local list of alerts
