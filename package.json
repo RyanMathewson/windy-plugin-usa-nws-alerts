@@ -26,5 +26,9 @@
     "dependencies": {
         "@windycom/plugin-devtools": "^3.0.0",
         "date-fns": "^4.1.0"
+    },
+    "devDependencies": {
+        "adm-zip": "^0.5.16",
+        "shapefile": "^0.6.6"
     }
 }

@@ -184,6 +184,7 @@
     import { singleclick } from '@windy/singleclick';
     import config from './pluginConfig';
 
+    import { buildPolylineLayers, buildPolylineLayersFromRings } from './zoneGeometry';
     // IMPORTANT: all types must be imported as `type` otherwise
     // Svelte TS compiler will fail
     import type { NWSAlert } from './nws';
@@ -401,22 +402,44 @@
         }
     };
 
-    const loadAlerts = () => {
+    const ZONE_DATA_URL =
+        'https://cdn.jsdelivr.net/gh/RyanMathewson/windy-plugin-usa-nws-alerts@main/data/zone-geometries.json';
+
+    // Zone data is fetched once per session and reused across refreshes.
+    let zoneData: Record<string, number[][][]> | null = null;
+
+    async function getZoneData(): Promise<Record<string, number[][][]>> {
+        if (!zoneData) {
+            const response = await fetch(ZONE_DATA_URL);
+            zoneData = await response.json();
+        }
+        return zoneData!;
+    }
+
+    function zoneKeyFromUrl(url: string): string {
+        const match = url.match(/\/zones\/([^/]+\/[^/]+)$/);
+        return match ? match[1] : '';
+    }
+
+    const loadAlerts = async () => {
         // Clear the map
         removeAllMapFeatures();
         allAlerts = [];
         displayedAlerts = [];
         lastRefresh = null;
 
-        const fetchURL = 'https://api.weather.gov/alerts/active';
-        fetch(fetchURL)
-            .then(response => response.json())
-            .then(result => result.features)
-            .then((nwsAlerts: NWSAlert[]) => {
-                lastRefresh = new Date();
-                const temporaryListOfAlerts: DisplayedAlert[] = [];
+        try {
+            const [alertsResult, zones] = await Promise.all([
+                fetch('https://api.weather.gov/alerts/active')
+                    .then(r => r.json())
+                    .then(data => data.features as NWSAlert[]),
+                getZoneData().catch(() => ({} as Record<string, number[][][]>)),
+            ]);
 
-                for (var nwsAlert of nwsAlerts) {
+            lastRefresh = new Date();
+            const temporaryListOfAlerts: DisplayedAlert[] = [];
+
+            for (const nwsAlert of alertsResult) {
                     const color = colorFromSeverity(nwsAlert.properties.severity);
 
                     const alert: DisplayedAlert = {
@@ -444,25 +467,24 @@
                         isHighlighted: false,
                     };
 
-                    if (nwsAlert.geometry && nwsAlert.geometry.type === 'Polygon') {
-                        for (var geometry of nwsAlert.geometry.coordinates) {
-                            const track: L.LatLngExpression[] = [];
-                            for (var point of geometry) {
-                                track.push([point[1], point[0]]); // Swap coordinates to match what Windy expects
+                    if (nwsAlert.geometry) {
+                        alert.layers = buildPolylineLayers(nwsAlert.geometry);
+                    } else if (nwsAlert.properties.affectedZones?.length) {
+                        for (const zoneUrl of nwsAlert.properties.affectedZones) {
+                            const rings = zones[zoneKeyFromUrl(zoneUrl)];
+                            if (rings) {
+                                alert.layers.push(...buildPolylineLayersFromRings(rings));
                             }
-                            alert.layers.push(new L.Polyline(track));
                         }
-                    } else if (nwsAlert.properties.affectedZones) {
-                        // TODO Look up affected zones
-                    } else {
-                        // Unsupported alert geometry
-                        console.log('Unsupported alert geometry: ', nwsAlert);
+                    }
+
+                    if (alert.layers.length === 0) {
                         continue;
                     }
 
                     temporaryListOfAlerts.push(alert);
 
-                    for (let layer of alert.layers) {
+                    for (const layer of alert.layers) {
                         layer.setStyle({
                             color,
                             weight: 2,
@@ -498,12 +520,11 @@
                 allAlerts = temporaryListOfAlerts.sort((a, b) => a.severityLevel - b.severityLevel);
 
                 filtersChanged();
-            })
-            .catch(reason => {
-                lastRefresh = null;
-                timeAgo = 'Error fetching alerts. Try again later.';
-                console.error(reason);
-            });
+        } catch (reason) {
+            lastRefresh = null;
+            timeAgo = 'Error fetching alerts. Try again later.';
+            console.error(reason);
+        }
     };
 
     const removeAllMapFeatures = () => {

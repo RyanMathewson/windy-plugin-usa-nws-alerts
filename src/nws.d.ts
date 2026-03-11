@@ -2,9 +2,15 @@ export interface NWSAlert {
     id: string;
     type: 'Feature';
     geometry: {
-      type: 'Polygon' | 'MultiPolygon';
+      type: 'Polygon';
       coordinates: number[][][];
-    };
+    } | {
+      type: 'MultiPolygon';
+      coordinates: number[][][][];
+    } | {
+      type: 'GeometryCollection';
+      geometries: ({ type: 'Polygon'; coordinates: number[][][] } | { type: 'MultiPolygon'; coordinates: number[][][][] })[];
+    } | null;
     properties: {
       '@id': string;
       '@type': string;
@@ -34,8 +40,31 @@ export interface NWSAlert {
       };
     };
   }
-  
+
 export interface NWSAlertGeoJSON {
     type: 'FeatureCollection';
     features: NWSAlert[];
+  }
+
+export interface NWSZoneFeature {
+    id: string;
+    type: 'Feature';
+    geometry: {
+      type: 'Polygon';
+      coordinates: number[][][];
+    } | {
+      type: 'MultiPolygon';
+      coordinates: number[][][][];
+    } | {
+      type: 'GeometryCollection';
+      geometries: ({ type: 'Polygon'; coordinates: number[][][] } | { type: 'MultiPolygon'; coordinates: number[][][][] })[];
+    } | null;
+    properties: {
+      '@id': string;
+      '@type': string;
+      id: string;
+      type: string;
+      name: string;
+      state: string;
+    };
   }
