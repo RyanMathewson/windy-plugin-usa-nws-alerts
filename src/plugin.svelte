@@ -387,7 +387,7 @@
                 layer.setStyle({ weight: 4 });
             }
             alert.isHighlighted = true;
-            displayedAlerts = [...displayedAlerts];
+            displayedAlerts = displayedAlerts;
         }
     };
 
@@ -398,7 +398,7 @@
             }
 
             alert.isHighlighted = false;
-            displayedAlerts = [...displayedAlerts];
+            displayedAlerts = displayedAlerts;
         }
     };
 
