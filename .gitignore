@@ -9,5 +9,6 @@ node_modules
 package-lock.json
 *.log
 dist/*
+data/null-geometry-zones.txt
 .claude/settings.local.json
 
