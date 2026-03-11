@@ -34,12 +34,23 @@ export function buildPolylineLayers(geometry: SupportedGeometry): L.Polyline[] {
  * one outline rather than many individual zone outlines.
  * Falls back to unmerged rings if the union fails.
  */
+// Snap factor used before polygon union. Coarser than stored precision (3dp) so
+// adjacent zone boundaries that represent the same edge align to identical
+// coordinates, allowing polygon-clipping to cleanly eliminate shared edges.
+const SNAP = 100; // 2 decimal places ≈ 1.1 km
+
+function snap(v: number): number {
+    return Math.round(v * SNAP) / SNAP;
+}
+
 export function mergeRings(rings: number[][][]): number[][][] {
     if (rings.length <= 1) { return rings; }
     try {
-        const [first, ...rest] = rings.map(ring => [ring] as polygonClipping.Polygon);
+        const snapped = rings.map(ring => ring.map(([lng, lat]) => [snap(lng), snap(lat)]));
+        const [first, ...rest] = snapped.map(ring => [ring] as polygonClipping.Polygon);
         const result = polygonClipping.union([first], ...(rest.map(p => [p]) as polygonClipping.MultiPolygon[]));
-        return result.flatMap(polygon => polygon);
+        // Filter degenerate rings that can result from snapping
+        return result.flatMap(polygon => polygon).filter(ring => ring.length >= 4);
     } catch (_e) {
         return rings;
     }
