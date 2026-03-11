@@ -625,7 +625,6 @@
         padding-top: 5px;
     }
     .alert {
-        padding-left: 7px;
         border-left: 5px solid;
         padding-left: 10px;
     }
