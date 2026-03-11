@@ -1,0 +1,32 @@
+name: Update Zone Data
+
+on:
+    schedule:
+        - cron: '0 6 1 * *' # Monthly on the 1st at 06:00 UTC
+    workflow_dispatch: # Allow manual trigger
+
+jobs:
+    update-zone-data:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+
+            - name: Generate zone data
+              run: node scripts/generate-zone-data.mjs
+
+            - name: Commit updated zone data
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "github-actions[bot]@users.noreply.github.com"
+                  git add data/zone-geometries.json
+                  if git diff --cached --quiet; then
+                    echo "No changes to zone data."
+                  else
+                    git commit -m "chore: update NWS zone geometries"
+                    git push
+                  fi
