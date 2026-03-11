@@ -9,4 +9,5 @@ node_modules
 package-lock.json
 *.log
 dist/*
+.claude/settings.local.json
 
