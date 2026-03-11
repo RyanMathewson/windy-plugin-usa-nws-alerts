@@ -539,6 +539,7 @@
                 continue;
             }
             for (var layer of alert.layers) {
+                layer.off();
                 layer.removeFrom(map);
             }
             alert.isAddedToMap = false;
