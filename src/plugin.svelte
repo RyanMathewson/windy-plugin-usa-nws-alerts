@@ -149,11 +149,10 @@
                     {alert.event}
                 </div>
                 <div
-                    style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: column;"
+                    style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: column;"
                 >
                     <div>Certainty: {alert.certainty}</div>
                     <div>Urgency: {alert.urgency}</div>
-                    <div>Status: {alert.status}</div>
                 </div>
                 <div class="noWrap">
                     Area: {alert.areaDesc}
@@ -206,7 +205,6 @@
         senderName: string;
         certainty: string;
         urgency: string;
-        status: string;
         messageType: string;
         category: string;
         instruction: string | null;
@@ -440,6 +438,10 @@
             const temporaryListOfAlerts: DisplayedAlert[] = [];
 
             for (const nwsAlert of alertsResult) {
+                    // status can be: Actual, Exercise, System, Test, or Draft.
+                    // Only "Actual" alerts are actionable; the rest are for testing/internal use.
+                    if (nwsAlert.properties.status !== 'Actual') continue;
+
                     const color = colorFromSeverity(nwsAlert.properties.severity);
 
                     const alert: DisplayedAlert = {
@@ -461,7 +463,6 @@
                         instruction: nwsAlert.properties.instruction,
                         messageType: nwsAlert.properties.messageType,
                         urgency: nwsAlert.properties.urgency,
-                        status: nwsAlert.properties.status,
                         layers: [],
                         isAddedToMap: false,
                         isHighlighted: false,
