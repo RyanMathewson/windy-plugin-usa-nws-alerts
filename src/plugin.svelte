@@ -611,6 +611,7 @@
     onDestroy(() => {
         map.off('zoomend', mapMoved);
         map.off('moveend', mapMoved);
+        singleclick.off(name);
 
         removeAllMapFeatures();
         clearInterval(lastUpdatedRefreshInterval);
