@@ -184,7 +184,7 @@
     import { singleclick } from '@windy/singleclick';
     import config from './pluginConfig';
 
-    import { buildPolylineLayers, buildPolylineLayersFromRings } from './zoneGeometry';
+    import { buildPolylineLayers, buildPolylineLayersFromRings, mergeRings } from './zoneGeometry';
     // IMPORTANT: all types must be imported as `type` otherwise
     // Svelte TS compiler will fail
     import type { NWSAlert } from './nws';
@@ -470,11 +470,13 @@
                     if (nwsAlert.geometry) {
                         alert.layers = buildPolylineLayers(nwsAlert.geometry);
                     } else if (nwsAlert.properties.affectedZones?.length) {
+                        const allRings: number[][][] = [];
                         for (const zoneUrl of nwsAlert.properties.affectedZones) {
                             const rings = zones[zoneKeyFromUrl(zoneUrl)];
-                            if (rings) {
-                                alert.layers.push(...buildPolylineLayersFromRings(rings));
-                            }
+                            if (rings) { allRings.push(...rings); }
+                        }
+                        if (allRings.length > 0) {
+                            alert.layers = buildPolylineLayersFromRings(mergeRings(allRings));
                         }
                     }
 

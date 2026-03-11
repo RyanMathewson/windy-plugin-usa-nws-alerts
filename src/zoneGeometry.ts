@@ -1,3 +1,5 @@
+import polygonClipping from 'polygon-clipping';
+
 type PolygonGeometry = { type: 'Polygon'; coordinates: number[][][] };
 type MultiPolygonGeometry = { type: 'MultiPolygon'; coordinates: number[][][][] };
 type GeometryCollectionGeometry = {
@@ -24,6 +26,23 @@ export function buildPolylineLayers(geometry: SupportedGeometry): L.Polyline[] {
         layers.push(...buildPolylineLayers(member));
     }
     return layers;
+}
+
+/**
+ * Merges multiple coordinate rings into a single unified boundary using polygon union.
+ * Eliminates shared interior edges between adjacent zones so an alert renders as
+ * one outline rather than many individual zone outlines.
+ * Falls back to unmerged rings if the union fails.
+ */
+export function mergeRings(rings: number[][][]): number[][][] {
+    if (rings.length <= 1) { return rings; }
+    try {
+        const [first, ...rest] = rings.map(ring => [ring] as polygonClipping.Polygon);
+        const result = polygonClipping.union([first], ...(rest.map(p => [p]) as polygonClipping.MultiPolygon[]));
+        return result.flatMap(polygon => polygon);
+    } catch (_e) {
+        return rings;
+    }
 }
 
 /**
