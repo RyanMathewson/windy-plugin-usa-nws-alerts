@@ -53,7 +53,7 @@
                 Other
             </div>
         </div>
-        {#each displayedAlerts as alert}
+        {#each displayedAlerts as alert (alert.id)}
             <div
                 class="alert mr-20 size-xs clickable"
                 style:border-left-color={colorFromSeverity(alert.severity)}
