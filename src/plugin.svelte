@@ -308,7 +308,7 @@
     */
 
     const displayPopup = (message: string, location: L.LatLngExpression) => {
-        openedPopup?.remove();
+        if (openedPopup?.isOpen()) openedPopup.remove();
 
         openedPopup = new L.Popup({ autoClose: false, closeOnClick: false })
             .setLatLng(location)
@@ -371,7 +371,7 @@
 
     const focusOnAlert = (alert: DisplayedAlert) => {
         // Clear any existing popups
-        openedPopup?.remove();
+        if (openedPopup?.isOpen()) openedPopup.remove();
 
         // Fly to the alert
         if (alert.bounds) {
@@ -530,7 +530,7 @@
     };
 
     const removeAllMapFeatures = () => {
-        openedPopup?.remove();
+        if (openedPopup?.isOpen()) openedPopup.remove();
 
         // Remove all of our alert layers
         for (var alert of allAlerts) {
