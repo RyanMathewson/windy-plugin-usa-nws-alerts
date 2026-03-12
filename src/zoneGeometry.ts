@@ -28,61 +28,51 @@ export function buildPolylineLayers(geometry: SupportedGeometry): L.Polyline[] {
     return layers;
 }
 
-// Snap factor applied before union so adjacent zone boundaries align to identical
-// coordinates, allowing polygon-clipping to cleanly eliminate shared edges.
-const SNAP = 25; // 0.04 degrees ≈ 4.4 km
+// Fine snap matching zone-geometries.json 3dp quantize precision.
+const SNAP = 1000; // 0.001° ≈ 111m
 
-function snap(v: number): number {
-    return Math.round(v * SNAP) / SNAP;
-}
+function snap(v: number): number { return Math.round(v * SNAP) / SNAP; }
 
-// Minimum bounding span for a result ring — rings smaller than this are artifacts.
-const MIN_SPAN = 2 / SNAP;
+// Removes spike artifacts: sequences A→B→C where the path nearly completely
+// reverses at B (the spike tip). Uses the cosine of the angle at B — if the
+// two segments are nearly antiparallel (cos < threshold) the tip is removed.
+// This catches spikes regardless of how far apart A and C are, which is the
+// case when spike arms diverge at an angle (not straight in/out).
+const SPIKE_COS_THRESHOLD = -0.9; // angle > ~154° at tip
 
-function ringSpan(ring: number[][]): number {
-    let minLng = Infinity, maxLng = -Infinity;
-    let minLat = Infinity, maxLat = -Infinity;
-    for (const [lng, lat] of ring) {
-        if (lng < minLng) { minLng = lng; }
-        if (lng > maxLng) { maxLng = lng; }
-        if (lat < minLat) { minLat = lat; }
-        if (lat > maxLat) { maxLat = lat; }
-    }
-    return Math.max(maxLng - minLng, maxLat - minLat);
-}
-
-// Douglas-Peucker simplification applied post-union to remove thin triangular spikes
-// left by imperfectly aligned zone boundaries.
-function douglasPeucker(points: number[][], tolerance: number): number[][] {
-    if (points.length <= 2) { return points; }
-    const [x1, y1] = points[0];
-    const [x2, y2] = points[points.length - 1];
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const lenSq = dx * dx + dy * dy;
-    let maxDist = 0;
-    let maxIdx = 0;
-    for (let i = 1; i < points.length - 1; i++) {
-        const [px, py] = points[i];
-        let dist: number;
-        if (lenSq === 0) {
-            const ex = px - x1;
-            const ey = py - y1;
-            dist = Math.sqrt(ex * ex + ey * ey);
-        } else {
-            const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / lenSq));
-            const ex = px - (x1 + t * dx);
-            const ey = py - (y1 + t * dy);
-            dist = Math.sqrt(ex * ex + ey * ey);
+function removeSpikes(ring: number[][]): number[][] {
+    let pts = ring.map(([lng, lat]) => [snap(lng), snap(lat)]);
+    let prevLen = -1;
+    while (pts.length !== prevLen && pts.length >= 4) {
+        prevLen = pts.length;
+        const n = pts.length;
+        const remove = new Uint8Array(n);
+        for (let i = 0; i < n; i++) {
+            const b = (i + 1) % n;
+            const c = (i + 2) % n;
+            if (remove[i] || remove[b] || remove[c]) { continue; }
+            const [ax, ay] = pts[i];
+            const [bx, by] = pts[b];
+            const [cx, cy] = pts[c];
+            const abx = bx - ax;
+            const aby = by - ay;
+            const bcx = cx - bx;
+            const bcy = cy - by;
+            const lenAB = Math.sqrt(abx * abx + aby * aby);
+            const lenBC = Math.sqrt(bcx * bcx + bcy * bcy);
+            if (lenAB === 0 || lenBC === 0) { continue; }
+            const cosAngle = (abx * bcx + aby * bcy) / (lenAB * lenBC);
+            if (cosAngle < SPIKE_COS_THRESHOLD) {
+                remove[b] = 1;
+                // Exact backtrack (A == C): remove the duplicate C too.
+                if (pts[i][0] === pts[c][0] && pts[i][1] === pts[c][1]) {
+                    remove[c] = 1;
+                }
+            }
         }
-        if (dist > maxDist) { maxDist = dist; maxIdx = i; }
+        pts = pts.filter((_, i) => !remove[i]);
     }
-    if (maxDist > tolerance) {
-        const left = douglasPeucker(points.slice(0, maxIdx + 1), tolerance);
-        const right = douglasPeucker(points.slice(maxIdx), tolerance);
-        return [...left.slice(0, -1), ...right];
-    }
-    return [points[0], points[points.length - 1]];
+    return pts;
 }
 
 /**
@@ -98,9 +88,7 @@ export function mergeRings(rings: number[][][]): number[][][] {
         const [first, ...rest] = snapped.map(ring => [ring] as polygonClipping.Polygon);
         const result = polygonClipping.union([first], ...(rest.map(p => [p]) as polygonClipping.MultiPolygon[]));
         return result
-            .map(polygon => polygon[0])             // outer ring only — discard holes
-            .filter(ring => ring.length >= 4 && ringSpan(ring) >= MIN_SPAN)
-            .map(ring => douglasPeucker(ring, 1 / SNAP))  // remove residual spikes
+            .map(polygon => polygon[0])  // outer ring only
             .filter(ring => ring.length >= 4);
     } catch (_e) {
         return rings;
@@ -110,8 +98,11 @@ export function mergeRings(rings: number[][][]): number[][][] {
 /**
  * Builds Leaflet Polyline layers from an array of coordinate rings.
  * Each ring is an array of [lng, lat] pairs (GeoJSON order).
- * Used for pre-bundled zone data from zone-geometries.json.
+ * Used for pre-bundled zone data from zone-geometries.json and NWS alert geometry.
  */
 export function buildPolylineLayersFromRings(rings: number[][][]): L.Polyline[] {
-    return rings.map(ring => new L.Polyline(ring.map(([lng, lat]) => [lat, lng] as L.LatLngTuple)));
+    return rings
+        .map(ring => removeSpikes(ring))
+        .filter(ring => ring.length >= 4)
+        .map(ring => new L.Polyline(ring.map(([lng, lat]) => [lat, lng] as L.LatLngTuple)));
 }
