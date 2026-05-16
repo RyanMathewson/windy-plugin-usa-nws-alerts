@@ -1,94 +1,26 @@
-{#if isMobileOrTablet}
-    <section class="mobile-alert-ui horizontal-scroll">
-        <div class="mb-10">
-            <div class="button button--variant-orange size-s" on:click={() => loadAlerts()}>
-                Refresh
-            </div>
-            <div class="size-s">
-                Last Refresh: {timeAgo}
-            </div>
-            <div
-                class="noWrap checkbox {includeStormEvents ? '' : 'checkbox--off'}"
-                on:click={() => {
-                    includeStormEvents = !includeStormEvents;
-                    filtersChanged();
-                }}
-            >
-                Storms & Tornados
-            </div>
-            <div
-                class="noWrap checkbox {includeWindEvents ? '' : 'checkbox--off'}"
-                on:click={() => {
-                    includeWindEvents = !includeWindEvents;
-                    filtersChanged();
-                }}
-            >
-                Wind & Dust
-            </div>
-            <div
-                class="noWrap checkbox {includeFloodEvents ? '' : 'checkbox--off'}"
-                on:click={() => {
-                    includeFloodEvents = !includeFloodEvents;
-                    filtersChanged();
-                }}
-            >
-                Floods
-            </div>
-            <div
-                class="noWrap checkbox {includeWinterEvents ? '' : 'checkbox--off'}"
-                on:click={() => {
-                    includeWinterEvents = !includeWinterEvents;
-                    filtersChanged();
-                }}
-            >
-                Winter & Snow
-            </div>
-            <div
-                class="noWrap checkbox {includeOtherEvents ? '' : 'checkbox--off'}"
-                on:click={() => {
-                    includeOtherEvents = !includeOtherEvents;
-                    filtersChanged();
-                }}
-            >
-                Other
-            </div>
-        </div>
-        {#each displayedAlerts as alert (alert.id)}
-            <div
-                class="alert mr-20 size-xs clickable"
-                style:border-left-color={colorFromSeverity(alert.severity)}
-                on:click={() => focusOnAlert(alert)}
-            >
-                <div class="size-l mb-5">
-                    {alert.event}
-                </div>
-                <div class="nowrap">
-                    {alert.headline}
-                </div>
-            </div>
-        {/each}
-    </section>
-{:else}
-    <section class="plugin__content">
+<section class:mobile-alert-ui={isMobileOrTablet} class:plugin__content={!isMobileOrTablet}>
+    {#if !isMobileOrTablet}
         <div
             class="plugin__title plugin__title--chevron-back"
             on:click={() => bcast.emit('rqstOpen', 'menu')}
         >
             {title}
         </div>
-        <div class="menu-top rounded-box rounded-box--with-border mm-section mb-10">
-            <div class="mb-10">
-                <div
-                    class="button button--variant-orange size-s"
-                    style="display:inline;"
-                    on:click={() => loadAlerts()}
-                >
-                    Refresh
-                </div>
-                <div class="size-s" style="display:inline;">
-                    Last Refresh: {timeAgo}
-                </div>
+    {/if}
+
+    <div class="menu-top rounded-box rounded-box--with-border mm-section mb-10">
+        <div class="mb-10 refresh-row">
+            <div
+                class="button button--variant-orange size-s"
+                on:click={() => loadAlerts()}
+            >
+                Refresh
             </div>
+            <div class="size-s">
+                Last Refresh: {timeAgo}
+            </div>
+        </div>
+        <div class="filter-list">
             <div
                 class="noWrap checkbox {includeStormEvents ? '' : 'checkbox--off'}"
                 on:click={() => {
@@ -135,44 +67,89 @@
                 Other
             </div>
         </div>
+    </div>
+
+    {#if selectedAlert}
+        <div class="detail-view size-s">
+            <div
+                class="all-alerts-back plugin__title--chevron-back clickable"
+                on:click={() => {
+                    selectedAlert = null;
+                }}
+            >
+                All Alerts
+            </div>
+            <div
+                class="alert detail-alert"
+                style:border-left-color={colorFromSeverity(selectedAlert.severity)}
+            >
+                <div class="size-l mb-5">
+                    {selectedAlert.event}
+                </div>
+                <div class="mb-10">
+                    {selectedAlert.headline}
+                </div>
+                <div class="metadata-grid mb-10">
+                    <div>Severity: {selectedAlert.severity}</div>
+                    <div>Certainty: {selectedAlert.certainty}</div>
+                    <div>Urgency: {selectedAlert.urgency}</div>
+                    <div>Sent: {formatDate(selectedAlert.sent)}</div>
+                </div>
+                <div class="mb-5">
+                    Area: {selectedAlert.areaDesc}
+                </div>
+                <div class="mb-10">
+                    Time: {formatDate(selectedAlert.effective)} - {formatDate(selectedAlert.expires)}
+                </div>
+                <div class="mb-10">
+                    Sender: {selectedAlert.senderName} ({selectedAlert.sender})
+                </div>
+                <div class="message-block mb-10">
+                    <div class="message-label">Description</div>
+                    <div>{selectedAlert.description}</div>
+                </div>
+                <div class="message-block">
+                    <div class="message-label">Instruction</div>
+                    <div>{selectedAlert.instruction ?? 'None'}</div>
+                </div>
+            </div>
+        </div>
+    {:else}
+        <div class="location-status size-s mb-10">
+            {#if selectedLocation}
+                Alerts for {formatCoordinate(selectedLocation.lat)}, {formatCoordinate(selectedLocation.lon)}
+            {:else}
+                Click a position on the map to show active alerts for that location.
+            {/if}
+        </div>
+
+        {#if selectedLocation && displayedAlerts.length === 0}
+            <div class="empty-state size-s">
+                No active alerts for this location.
+            </div>
+        {/if}
+
         {#each displayedAlerts as alert (alert.id)}
             <div
-                class="alert mb-20 size-xs clickable"
+                class="alert alert-row mb-10 size-xs clickable"
                 class:highlightedAlert={alert.isHighlighted}
                 style:border-left-color={colorFromSeverity(alert.severity)}
-                use:setDivElement={alert}
-                on:click={() => focusOnAlert(alert)}
+                on:click={() => {
+                    selectedAlert = alert;
+                }}
                 on:mouseenter={() => highlightAlert(alert)}
                 on:mouseleave={() => unHighlightAlert(alert)}
             >
-                <div class="size-l mb-5">
+                <div class="size-l">
                     {alert.event}
                 </div>
-                <div
-                    style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: column;"
-                >
-                    <div>Certainty: {alert.certainty}</div>
-                    <div>Urgency: {alert.urgency}</div>
-                </div>
-                <div class="noWrap">
-                    Area: {alert.areaDesc}
-                </div>
-                <div class="noWrap">
-                    Time: {formatDate(alert.effective)} - {formatDate(alert.expires)}
-                </div>
-                <div class="noWrap" title={'Sent: ' + formatDate(alert.sent)}>
-                    Sender: {alert.senderName} ({alert.sender})
-                </div>
-                <div class="noWrap" title={alert.description}>
-                    Description: <span class="hasTitle">{alert.description}</span>
-                </div>
-                <div class="noWrap" title={alert.instruction}>
-                    Instruction: <span class="hasTitle">{alert.instruction ?? 'None'}</span>
+                <div class="size-s">
+                    Expires: {formatDate(alert.expires)}
                 </div>
             </div>
         {/each}
-    </section>
-{/if}
+    {/if}
+</section>
 
 <script lang="ts">
     import bcast from '@windy/broadcast';
@@ -189,6 +166,17 @@
     import type { NWSAlert } from './nws';
 
     const { name, title } = config;
+
+    const POINT_ON_SEGMENT_TOLERANCE = 1e-9;
+
+    type AlertGeometry = NonNullable<NWSAlert['geometry']>;
+    type GeoJsonRing = number[][];
+    type GeoJsonPolygon = GeoJsonRing[];
+
+    interface SelectedLocation {
+        lat: number;
+        lon: number;
+    }
 
     interface DisplayedAlert {
         id: string;
@@ -209,18 +197,18 @@
         category: string;
         instruction: string | null;
         layers: L.Polyline[];
+        polygons: GeoJsonPolygon[];
         isAddedToMap: boolean;
         isHighlighted: boolean;
         severityLevel: number;
-        center?: L.LatLng;
-        bounds?: L.LatLngBounds;
-        divElement?: HTMLDivElement | null;
     }
 
     let allAlerts: DisplayedAlert[] = [];
     let filteredAlerts: DisplayedAlert[] = [];
     let displayedAlerts: DisplayedAlert[] = [];
-    let openedPopup: L.Popup | null = null;
+    let selectedAlert: DisplayedAlert | null = null;
+    let selectedLocation: SelectedLocation | null = null;
+    let selectedLocationMarker: L.Marker | null = null;
     let lastRefresh: Date | null = null;
     let timeAgo: string = 'Loading...'; // Placeholder text
 
@@ -294,35 +282,7 @@
         'Volcano Warning',
     ];
 
-    // TODO auto scroll to highlighted alerts. Doesn't behave well.
-    /*
-    $: {
-        for (const alert of displayedAlerts) {
-            if (alert.isHighlighted && alert.divElement) {
-                alert.divElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
-    }
-    */
-
-    const displayPopup = (message: string, location: L.LatLngExpression) => {
-        if (openedPopup?.isOpen()) openedPopup.remove();
-
-        openedPopup = new L.Popup({ autoClose: false, closeOnClick: false })
-            .setLatLng(location)
-            .setContent(message)
-            .openOn(map);
-    };
-
-    function setDivElement(node: HTMLDivElement, alert: DisplayedAlert) {
-        alert.divElement = node;
-        return {
-            destroy() {
-                alert.divElement = null;
-            },
-        };
-    }
-
+    /** Returns the Windy pane accent color for an NWS severity label. */
     function colorFromSeverity(severity: string): string {
         let hue = 0;
         if (severity === 'Extreme') {
@@ -341,6 +301,7 @@
         return color;
     }
 
+    /** Returns a lower-is-more-important sort level for an NWS severity label. */
     function levelFromSeverity(severity: string): number {
         if (severity === 'Extreme') {
             return 1;
@@ -355,6 +316,7 @@
         }
     }
 
+    /** Formats alert timestamps in the user's locale with a short time zone. */
     function formatDate(date: Date): string {
         const options: Intl.DateTimeFormatOptions = {
             year: 'numeric',
@@ -367,21 +329,169 @@
         return new Intl.DateTimeFormat(undefined, options).format(date).replace(',', '');
     }
 
-    const focusOnAlert = (alert: DisplayedAlert) => {
-        // Clear any existing popups
-        if (openedPopup?.isOpen()) openedPopup.remove();
+    /** Formats map coordinates compactly enough for the alert pane. */
+    function formatCoordinate(value: number): string {
+        return value.toFixed(3);
+    }
 
-        // Fly to the alert
-        if (alert.bounds) {
-            map.flyToBounds(alert.bounds, {
-                duration: 1,
-            });
+    /** Converts supported NWS GeoJSON geometry into polygon rings for hit testing. */
+    function polygonsFromGeometry(geometry: AlertGeometry): GeoJsonPolygon[] {
+        if (geometry.type === 'Polygon') {
+            return [geometry.coordinates];
         }
-    };
+        if (geometry.type === 'MultiPolygon') {
+            return geometry.coordinates;
+        }
+        return geometry.geometries.flatMap(polygonsFromGeometry);
+    }
+
+    /** Treats generated zone rings as independent outer-ring polygons. */
+    function polygonsFromRings(rings: number[][][]): GeoJsonPolygon[] {
+        return rings.map(ring => [ring]);
+    }
+
+    /** Returns true when a point is close enough to a ring segment to count as covered. */
+    function isPointOnSegment(
+        location: SelectedLocation,
+        start: number[],
+        end: number[],
+    ): boolean {
+        const [startLng, startLat] = start;
+        const [endLng, endLat] = end;
+        const crossProduct =
+            (location.lat - startLat) * (endLng - startLng) -
+            (location.lon - startLng) * (endLat - startLat);
+
+        if (Math.abs(crossProduct) > POINT_ON_SEGMENT_TOLERANCE) {
+            return false;
+        }
+
+        const minLng = Math.min(startLng, endLng) - POINT_ON_SEGMENT_TOLERANCE;
+        const maxLng = Math.max(startLng, endLng) + POINT_ON_SEGMENT_TOLERANCE;
+        const minLat = Math.min(startLat, endLat) - POINT_ON_SEGMENT_TOLERANCE;
+        const maxLat = Math.max(startLat, endLat) + POINT_ON_SEGMENT_TOLERANCE;
+
+        return (
+            location.lon >= minLng &&
+            location.lon <= maxLng &&
+            location.lat >= minLat &&
+            location.lat <= maxLat
+        );
+    }
+
+    /** Returns true when a longitude/latitude point is inside a GeoJSON ring. */
+    function isPointInRing(location: SelectedLocation, ring: GeoJsonRing): boolean {
+        let isInside = false;
+        const x = location.lon;
+        const y = location.lat;
+
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            const [xi, yi] = ring[i];
+            const [xj, yj] = ring[j];
+            if (isPointOnSegment(location, ring[i], ring[j])) {
+                return true;
+            }
+            if (yi > y === yj > y) {
+                continue;
+            }
+
+            const intersectionLng = ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+            if (x < intersectionLng) {
+                isInside = !isInside;
+            }
+        }
+
+        return isInside;
+    }
+
+    /** Returns true when a point is inside the polygon outer ring and outside holes. */
+    function isPointInPolygon(location: SelectedLocation, polygon: GeoJsonPolygon): boolean {
+        if (polygon.length === 0 || !isPointInRing(location, polygon[0])) {
+            return false;
+        }
+        return polygon.slice(1).every(ring => !isPointInRing(location, ring));
+    }
+
+    /** Returns true when the selected map position is covered by the alert geometry. */
+    function alertContainsLocation(alert: DisplayedAlert, location: SelectedLocation): boolean {
+        return alert.polygons.some(polygon => isPointInPolygon(location, polygon));
+    }
+
+    /** Recomputes the clicked-position list from current filters and selected location. */
+    function updateDisplayedAlertsForLocation(): void {
+        const nextDisplayedAlerts = selectedLocation
+            ? filteredAlerts.filter(alert => alertContainsLocation(alert, selectedLocation!))
+            : [];
+        selectedAlert = selectedAlert && nextDisplayedAlerts.includes(selectedAlert) ? selectedAlert : null;
+        displayedAlerts = nextDisplayedAlerts;
+    }
+
+    /** Extracts latitude and longitude from Windy or Leaflet click event shapes. */
+    function locationFromClickEvent(ev: unknown): SelectedLocation | null {
+        const candidate = ev as {
+            lat?: unknown;
+            lon?: unknown;
+            lng?: unknown;
+            latlng?: { lat?: unknown; lng?: unknown; lon?: unknown };
+        };
+        const lat = candidate.lat ?? candidate.latlng?.lat;
+        const lon = candidate.lon ?? candidate.lng ?? candidate.latlng?.lon ?? candidate.latlng?.lng;
+
+        if (typeof lat !== 'number' || typeof lon !== 'number') {
+            return null;
+        }
+        return { lat, lon };
+    }
+
+    /** Adds or moves the map marker that identifies the selected alert lookup point. */
+    function updateSelectedLocationMarker(location: SelectedLocation): void {
+        const latLng: L.LatLngExpression = [location.lat, location.lon];
+
+        if (selectedLocationMarker) {
+            selectedLocationMarker.setLatLng(latLng);
+            return;
+        }
+
+        selectedLocationMarker = L.marker(latLng, {
+            icon: L.divIcon({
+                className: 'selected-location-pin-icon',
+                html: '<div class="selected-location-pin"></div>',
+                iconAnchor: [10, 28],
+                iconSize: [20, 28],
+            }),
+            interactive: false,
+        }).addTo(map);
+    }
+
+    /** Removes the selected-location marker from the map. */
+    function removeSelectedLocationMarker(): void {
+        if (!selectedLocationMarker) {
+            return;
+        }
+
+        selectedLocationMarker.removeFrom(map);
+        selectedLocationMarker = null;
+    }
+
+    /** Selects a clicked map position and updates the visible alert list. */
+    function selectLocation(location: SelectedLocation): void {
+        selectedLocation = location;
+        selectedAlert = null;
+        updateSelectedLocationMarker(location);
+        updateDisplayedAlertsForLocation();
+    }
+
+    /** Handles Windy singleclick events while the plugin is open. */
+    function handleMapClick(ev: unknown): void {
+        const location = locationFromClickEvent(ev);
+        if (location) {
+            selectLocation(location);
+        }
+    }
 
     const highlightAlert = (alert: DisplayedAlert) => {
         if (alert.isAddedToMap) {
-            for (let layer of alert.layers) {
+            for (const layer of alert.layers) {
                 layer.setStyle({ weight: 4 });
             }
             alert.isHighlighted = true;
@@ -391,7 +501,7 @@
 
     const unHighlightAlert = (alert: DisplayedAlert) => {
         if (alert.isAddedToMap) {
-            for (let layer of alert.layers) {
+            for (const layer of alert.layers) {
                 layer.setStyle({ weight: 2 });
             }
 
@@ -424,6 +534,7 @@
         removeAllMapFeatures();
         allAlerts = [];
         displayedAlerts = [];
+        selectedAlert = null;
         lastRefresh = null;
 
         try {
@@ -438,92 +549,84 @@
             const temporaryListOfAlerts: DisplayedAlert[] = [];
 
             for (const nwsAlert of alertsResult) {
-                    // status can be: Actual, Exercise, System, Test, or Draft.
-                    // Only "Actual" alerts are actionable; the rest are for testing/internal use.
-                    if (nwsAlert.properties.status !== 'Actual') continue;
-
-                    const color = colorFromSeverity(nwsAlert.properties.severity);
-
-                    const alert: DisplayedAlert = {
-                        id: nwsAlert.properties['@id'],
-                        severity: nwsAlert.properties.severity,
-                        severityLevel: levelFromSeverity(nwsAlert.properties.severity),
-                        event: nwsAlert.properties.event,
-                        description: nwsAlert.properties.description,
-                        areaDesc: nwsAlert.properties.areaDesc,
-                        headline: nwsAlert.properties.headline,
-                        effective: new Date(nwsAlert.properties.effective),
-                        expires: new Date(nwsAlert.properties.expires),
-                        sent: new Date(nwsAlert.properties.sent),
-                        ends: nwsAlert.properties.ends ? new Date(nwsAlert.properties.ends) : null,
-                        sender: nwsAlert.properties.sender,
-                        senderName: nwsAlert.properties.senderName,
-                        certainty: nwsAlert.properties.certainty,
-                        category: nwsAlert.properties.category,
-                        instruction: nwsAlert.properties.instruction,
-                        messageType: nwsAlert.properties.messageType,
-                        urgency: nwsAlert.properties.urgency,
-                        layers: [],
-                        isAddedToMap: false,
-                        isHighlighted: false,
-                    };
-
-                    if (nwsAlert.geometry) {
-                        alert.layers = buildPolylineLayers(nwsAlert.geometry);
-                    } else if (nwsAlert.properties.affectedZones?.length) {
-                        const allRings: number[][][] = [];
-                        for (const zoneUrl of nwsAlert.properties.affectedZones) {
-                            const rings = zones[zoneKeyFromUrl(zoneUrl)];
-                            if (rings) { allRings.push(...rings); }
-                        }
-                        if (allRings.length > 0) {
-                            alert.layers = buildPolylineLayersFromRings(mergeRings(allRings));
-                        }
-                    }
-
-                    if (alert.layers.length === 0) {
-                        continue;
-                    }
-
-                    temporaryListOfAlerts.push(alert);
-
-                    for (const layer of alert.layers) {
-                        layer.setStyle({
-                            color,
-                            weight: 2,
-                        });
-
-                        layer.on('mouseover', () => highlightAlert(alert));
-                        layer.on('mouseout', () => unHighlightAlert(alert));
-
-                        const description = nwsAlert.properties.description;
-
-                        layer.on('click', () => {
-                            displayPopup(description, layer.getBounds().getCenter());
-
-                            // Scroll the alert into view
-                            if (alert.divElement) {
-                                alert.divElement.scrollIntoView({
-                                    behavior: 'smooth',
-                                    block: 'center',
-                                });
-                            }
-                        });
-
-                        map.addLayer(layer);
-
-                        // We can only get center and bounds after adding to the map
-                        // TODO We are only saving these from the last layer
-                        alert.center = layer.getCenter();
-                        alert.bounds = layer.getBounds();
-                    }
-                    alert.isAddedToMap = true;
+                // status can be: Actual, Exercise, System, Test, or Draft.
+                // Only "Actual" alerts are actionable; the rest are for testing/internal use.
+                if (nwsAlert.properties.status !== 'Actual') {
+                    continue;
                 }
 
-                // Update our local list of alerts
-                allAlerts = temporaryListOfAlerts.sort((a, b) => a.severityLevel - b.severityLevel);
+                const color = colorFromSeverity(nwsAlert.properties.severity);
 
-                filtersChanged();
+                const alert: DisplayedAlert = {
+                    id: nwsAlert.properties['@id'],
+                    severity: nwsAlert.properties.severity,
+                    severityLevel: levelFromSeverity(nwsAlert.properties.severity),
+                    event: nwsAlert.properties.event,
+                    description: nwsAlert.properties.description,
+                    areaDesc: nwsAlert.properties.areaDesc,
+                    headline: nwsAlert.properties.headline,
+                    effective: new Date(nwsAlert.properties.effective),
+                    expires: new Date(nwsAlert.properties.expires),
+                    sent: new Date(nwsAlert.properties.sent),
+                    ends: nwsAlert.properties.ends ? new Date(nwsAlert.properties.ends) : null,
+                    sender: nwsAlert.properties.sender,
+                    senderName: nwsAlert.properties.senderName,
+                    certainty: nwsAlert.properties.certainty,
+                    category: nwsAlert.properties.category,
+                    instruction: nwsAlert.properties.instruction,
+                    messageType: nwsAlert.properties.messageType,
+                    urgency: nwsAlert.properties.urgency,
+                    layers: [],
+                    polygons: [],
+                    isAddedToMap: false,
+                    isHighlighted: false,
+                };
+
+                if (nwsAlert.geometry) {
+                    alert.layers = buildPolylineLayers(nwsAlert.geometry);
+                    alert.polygons = polygonsFromGeometry(nwsAlert.geometry);
+                } else if (nwsAlert.properties.affectedZones?.length) {
+                    const allRings: number[][][] = [];
+                    for (const zoneUrl of nwsAlert.properties.affectedZones) {
+                        const rings = zones[zoneKeyFromUrl(zoneUrl)];
+                        if (rings) {
+                            allRings.push(...rings);
+                        }
+                    }
+                    if (allRings.length > 0) {
+                        const mergedRings = mergeRings(allRings);
+                        alert.layers = buildPolylineLayersFromRings(mergedRings);
+                        alert.polygons = polygonsFromRings(mergedRings);
+                    }
+                }
+
+                if (alert.layers.length === 0 || alert.polygons.length === 0) {
+                    continue;
+                }
+
+                temporaryListOfAlerts.push(alert);
+
+                for (const layer of alert.layers) {
+                    layer.setStyle({
+                        className: 'nws-alert-layer',
+                        color,
+                        weight: 2,
+                    });
+
+                    layer.on('mouseover', () => highlightAlert(alert));
+                    layer.on('mouseout', () => unHighlightAlert(alert));
+
+                    layer.on('click', handleMapClick);
+
+                    map.addLayer(layer);
+                }
+                alert.isAddedToMap = true;
+            }
+
+            // Update our local list of alerts
+            allAlerts = temporaryListOfAlerts.sort((a, b) => a.severityLevel - b.severityLevel);
+
+            filtersChanged();
         } catch (reason) {
             lastRefresh = null;
             timeAgo = 'Error fetching alerts. Try again later.';
@@ -532,14 +635,12 @@
     };
 
     const removeAllMapFeatures = () => {
-        if (openedPopup?.isOpen()) openedPopup.remove();
-
         // Remove all of our alert layers
-        for (var alert of allAlerts) {
+        for (const alert of allAlerts) {
             if (!alert.isAddedToMap) {
                 continue;
             }
-            for (var layer of alert.layers) {
+            for (const layer of alert.layers) {
                 layer.off();
                 layer.removeFrom(map);
             }
@@ -548,8 +649,8 @@
     };
 
     const filtersChanged = () => {
-        let includedAlerts = [];
-        for (let alert of allAlerts) {
+        const includedAlerts: DisplayedAlert[] = [];
+        for (const alert of allAlerts) {
             if (
                 (includeFloodEvents && floodAlertEvents.includes(alert.event)) ||
                 (includeStormEvents && stormAlertEvents.includes(alert.event)) ||
@@ -561,7 +662,7 @@
 
                 // Add this alerts layers to the map if they don't already exist
                 if (!alert.isAddedToMap) {
-                    for (let layer of alert.layers) {
+                    for (const layer of alert.layers) {
                         layer.addTo(map);
                     }
                     alert.isAddedToMap = true;
@@ -571,7 +672,7 @@
 
                 // Remove this alerts layers from the map if they exist
                 if (alert.isAddedToMap) {
-                    for (let layer of alert.layers) {
+                    for (const layer of alert.layers) {
                         layer.removeFrom(map);
                     }
                     alert.isAddedToMap = false;
@@ -580,16 +681,7 @@
         }
 
         filteredAlerts = includedAlerts;
-        // Apply the map bounds filtering to the updated list of filtered alerts
-        mapMoved();
-    };
-
-    const mapMoved = () => {
-        // Filter what alerts we are displaying based on the current view of the map
-        const mapBounds = map.getBounds();
-        displayedAlerts = filteredAlerts.filter(
-            alert => alert.bounds && mapBounds.intersects(alert.bounds),
-        );
+        updateDisplayedAlertsForLocation();
     };
 
     const lastUpdatedRefreshInterval = setInterval(() => {
@@ -604,19 +696,14 @@
     };
 
     onMount(() => {
-        map.on('zoomend', mapMoved);
-        map.on('moveend', mapMoved);
-
-        // Intercept single clicks and do nothing so the Windy picker doesn't come up
-        singleclick.on(name, ev => {});
+        singleclick.on(name, handleMapClick);
     });
 
     onDestroy(() => {
-        map.off('zoomend', mapMoved);
-        map.off('moveend', mapMoved);
-        singleclick.off(name);
+        singleclick.off(name, handleMapClick);
 
         removeAllMapFeatures();
+        removeSelectedLocationMarker();
         clearInterval(lastUpdatedRefreshInterval);
     });
 </script>
@@ -625,19 +712,86 @@
     .plugin__content {
         padding-top: 5px;
     }
+    .refresh-row {
+        align-items: center;
+        display: flex;
+        gap: 8px;
+    }
+    .filter-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 10px;
+    }
+    .all-alerts-back {
+        cursor: pointer;
+        display: inline-block;
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
     .alert {
         border-left: 5px solid;
         padding-left: 10px;
+    }
+    .alert-row {
+        padding-bottom: 8px;
+        padding-top: 8px;
+    }
+    .detail-alert {
+        padding-bottom: 10px;
     }
     .highlightedAlert {
         border-left: 10px solid;
         padding-left: 5px;
     }
     .mobile-alert-ui {
-        display: flex;
-        flex-direction: row;
-        align-items: stretch;
+        box-sizing: border-box;
+        max-height: 45vh;
         overflow: auto;
+        padding: 8px;
+        width: 100%;
+    }
+    .metadata-grid {
+        display: grid;
+        gap: 4px 8px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .message-block {
+        white-space: pre-wrap;
+    }
+    .message-label {
+        font-weight: bold;
+        margin-bottom: 2px;
+    }
+    .location-status,
+    .empty-state {
+        line-height: 1.4;
+    }
+    :global(.nws-alert-layer) {
+        cursor: pointer;
+    }
+    :global(.selected-location-pin-icon) {
+        background: transparent;
+        border: 0;
+    }
+    :global(.selected-location-pin) {
+        background: #f45d22;
+        border: 2px solid #ffffff;
+        border-radius: 50% 50% 50% 0;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+        height: 16px;
+        transform: rotate(-45deg);
+        transform-origin: 50% 50%;
+        width: 16px;
+    }
+    :global(.selected-location-pin::after) {
+        background: #ffffff;
+        border-radius: 50%;
+        content: '';
+        height: 6px;
+        left: 5px;
+        position: absolute;
+        top: 5px;
+        width: 6px;
     }
     .noWrap {
         white-space: nowrap;

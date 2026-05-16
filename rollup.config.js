@@ -79,7 +79,7 @@ export default {
     },
     plugins: [
         typescript({
-            sourceMap: useSourceMaps,
+            sourceMap: false,
             inlineSources: false,
         }),
         rollupSwc({
