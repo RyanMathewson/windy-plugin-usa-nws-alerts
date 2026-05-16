@@ -8,13 +8,6 @@
         </div>
     {/if}
 
-    <AlertControls
-        {filters}
-        {timeAgo}
-        onRefresh={loadAlerts}
-        onFiltersChange={handleFiltersChange}
-    />
-
     {#if selectedAlert}
         <AlertDetail
             alert={selectedAlert}
@@ -23,10 +16,16 @@
             }}
         />
     {:else}
+        <AlertControls
+            {filters}
+            {timeAgo}
+            locationLabel={selectedLocation ? selectedLocationLabel : 'Select a location on the map'}
+            onRefresh={loadAlerts}
+            onFiltersChange={handleFiltersChange}
+        />
         <AlertList
             {displayedAlerts}
             {selectedLocation}
-            {selectedLocationLabel}
             onSelectAlert={selectAlert}
             onHighlightAlert={highlightAlert}
             onUnhighlightAlert={unHighlightAlert}
@@ -39,7 +38,6 @@
     import { map } from '@windy/map';
     import { isMobileOrTablet } from '@windy/rootScope';
     import { onDestroy, onMount } from 'svelte';
-    import { formatDistanceToNow } from 'date-fns';
     import { singleclick } from '@windy/singleclick';
     import { get as getReverseName } from '@windy/reverseName';
     import AlertControls from './components/AlertControls.svelte';
@@ -70,6 +68,10 @@
 
     const { name, title } = config;
     const REVERSE_NAME_ZOOMS = [13, 11, 9, 7];
+    const SECOND_MS = 1000;
+    const MINUTE_MS = 60 * SECOND_MS;
+    const HOUR_MS = 60 * MINUTE_MS;
+    const DAY_MS = 24 * HOUR_MS;
 
     interface ReverseNameResult {
         name?: string;
@@ -85,7 +87,7 @@
     let selectedLocationMarker: L.Marker | null = null;
     let locationNameRequestId = 0;
     let lastRefresh: Date | null = null;
-    let timeAgo = 'Loading...';
+    let timeAgo = '...';
     let filters: AlertFilterState = createDefaultAlertFilters();
 
     /** Loads NWS alerts, renders their map layers, and reapplies current filters. */
@@ -95,6 +97,7 @@
         displayedAlerts = [];
         selectedAlert = null;
         lastRefresh = null;
+        timeAgo = '...';
 
         try {
             const [alertsResult, zones] = await Promise.all([
@@ -103,10 +106,11 @@
             ]);
             allAlerts = buildDisplayedAlerts(alertsResult, zones);
             lastRefresh = new Date();
+            timeAgo = formatCompactElapsedTime(lastRefresh);
             filtersChanged();
         } catch (reason) {
             lastRefresh = null;
-            timeAgo = 'Error fetching alerts. Try again later.';
+            timeAgo = 'error';
             console.error(reason);
         }
     }
@@ -245,9 +249,24 @@
         }
     }
 
+    /** Formats an elapsed time as a compact refresh label. */
+    function formatCompactElapsedTime(fromDate: Date): string {
+        const elapsedMs = Math.max(0, Date.now() - fromDate.getTime());
+        if (elapsedMs < MINUTE_MS) {
+            return `${Math.floor(elapsedMs / SECOND_MS)}s`;
+        }
+        if (elapsedMs < HOUR_MS) {
+            return `${Math.floor(elapsedMs / MINUTE_MS)}m`;
+        }
+        if (elapsedMs < DAY_MS) {
+            return `${Math.floor(elapsedMs / HOUR_MS)}h`;
+        }
+        return `${Math.floor(elapsedMs / DAY_MS)}d`;
+    }
+
     const lastUpdatedRefreshInterval = setInterval(() => {
         if (lastRefresh) {
-            timeAgo = formatDistanceToNow(lastRefresh, { addSuffix: true });
+            timeAgo = formatCompactElapsedTime(lastRefresh);
         }
     }, 1000);
 

@@ -1,3 +1,4 @@
+import alertIconSvg from '../resources/alertIcon.svg';
 import { colorFromSeverity } from './alertUtils';
 import type { DisplayedAlert, SelectedLocation } from './alertTypes';
 
@@ -97,9 +98,9 @@ export function updateSelectedLocationMarker(
     return L.marker(latLng, {
         icon: L.divIcon({
             className: 'selected-location-pin-icon',
-            html: '<div class="selected-location-pin"></div>',
-            iconAnchor: [10, 28],
-            iconSize: [20, 28],
+            html: `<div class="selected-location-pin">${alertIconSvg}</div>`,
+            iconAnchor: [12, 32],
+            iconSize: [24, 32],
         }),
         interactive: false,
     }).addTo(mapInstance);

@@ -1,12 +1,8 @@
-<div class="location-status size-s mb-10">
-    {#if selectedLocation}
-        Alerts for {selectedLocationLabel}
-    {:else}
+{#if !selectedLocation}
+    <div class="empty-state size-s">
         Click a position on the map to show active alerts for that location.
-    {/if}
-</div>
-
-{#if selectedLocation && displayedAlerts.length === 0}
+    </div>
+{:else if displayedAlerts.length === 0}
     <div class="empty-state size-s">
         No active alerts for this location.
     </div>
@@ -21,11 +17,16 @@
         on:mouseenter={() => onHighlightAlert(alert)}
         on:mouseleave={() => onUnhighlightAlert(alert)}
     >
-        <div class="size-l">
-            {alert.event}
+        <div class="alert-row-content">
+            <div class="size-l">
+                {alert.event}
+            </div>
+            <div class="size-s">
+                Expires: {formatDate(alert.expires)}
+            </div>
         </div>
-        <div class="size-s">
-            Expires: {formatDate(alert.expires)}
+        <div class="alert-row-chevron" aria-hidden="true">
+            ›
         </div>
     </div>
 {/each}
@@ -36,7 +37,6 @@
 
     export let displayedAlerts: DisplayedAlert[];
     export let selectedLocation: SelectedLocation | null;
-    export let selectedLocationLabel: string;
     export let onSelectAlert: (alert: DisplayedAlert) => void;
     export let onHighlightAlert: (alert: DisplayedAlert) => void;
     export let onUnhighlightAlert: (alert: DisplayedAlert) => void;
