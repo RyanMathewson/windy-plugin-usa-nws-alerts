@@ -117,7 +117,7 @@
     {:else}
         <div class="location-status size-s mb-10">
             {#if selectedLocation}
-                Alerts for {formatCoordinate(selectedLocation.lat)}, {formatCoordinate(selectedLocation.lon)}
+                Alerts for {selectedLocationLabel}
             {:else}
                 Click a position on the map to show active alerts for that location.
             {/if}
@@ -158,6 +158,7 @@
     import { onMount, onDestroy } from 'svelte';
     import { formatDistanceToNow } from 'date-fns';
     import { singleclick } from '@windy/singleclick';
+    import { get as getReverseName } from '@windy/reverseName';
     import config from './pluginConfig';
 
     import { buildPolylineLayers, buildPolylineLayersFromRings, mergeRings } from './zoneGeometry';
@@ -168,10 +169,16 @@
     const { name, title } = config;
 
     const POINT_ON_SEGMENT_TOLERANCE = 1e-9;
+    const REVERSE_NAME_ZOOMS = [13, 11, 9, 7];
 
     type AlertGeometry = NonNullable<NWSAlert['geometry']>;
     type GeoJsonRing = number[][];
     type GeoJsonPolygon = GeoJsonRing[];
+
+    interface ReverseNameResult {
+        name?: string;
+        nameValid?: boolean;
+    }
 
     interface SelectedLocation {
         lat: number;
@@ -208,7 +215,9 @@
     let displayedAlerts: DisplayedAlert[] = [];
     let selectedAlert: DisplayedAlert | null = null;
     let selectedLocation: SelectedLocation | null = null;
+    let selectedLocationLabel = 'selected location';
     let selectedLocationMarker: L.Marker | null = null;
+    let locationNameRequestId = 0;
     let lastRefresh: Date | null = null;
     let timeAgo: string = 'Loading...'; // Placeholder text
 
@@ -473,16 +482,61 @@
         selectedLocationMarker = null;
     }
 
+    /** Resolves a human-readable Windy place name for the selected map point. */
+    async function loadSelectedLocationName(location: SelectedLocation): Promise<void> {
+        const requestId = locationNameRequestId + 1;
+        locationNameRequestId = requestId;
+        selectedLocationLabel = formatSelectedLocationCoords(location);
+
+        try {
+            const reverseName = await getBestReverseName(location);
+            if (requestId !== locationNameRequestId) {
+                return;
+            }
+            console.log('Reverse geocoder result:', reverseName);
+
+            selectedLocationLabel = reverseName ?? formatSelectedLocationCoords(location);
+        } catch (reason) {
+            if (requestId === locationNameRequestId) {
+                selectedLocationLabel = formatSelectedLocationCoords(location);
+                console.error(reason);
+            }
+        }
+    }
+
+    /** Tries Windy's reverse geocoder at several zooms and returns the first useful label. */
+    async function getBestReverseName(location: SelectedLocation): Promise<string | null> {
+        const reverseName = await getReverseName(location, REVERSE_NAME_ZOOMS[0]) as ReverseNameResult;
+        return formatReverseName(reverseName);
+    }
+
+    /** Builds a concise place label from Windy's reverse geocoder response. */
+    function formatReverseName(reverseName: ReverseNameResult): string | null {
+        if (reverseName.nameValid === false || !reverseName.name) {
+            return null;
+        }
+
+        return reverseName.name;
+    }
+
+    /** Formats the clicked location as coordinates for immediate display and fallback. */
+    function formatSelectedLocationCoords(location: SelectedLocation): string {
+        return `${formatCoordinate(location.lat)}, ${formatCoordinate(location.lon)}`;
+    }
+
     /** Selects a clicked map position and updates the visible alert list. */
     function selectLocation(location: SelectedLocation): void {
-        selectedLocation = location;
+        selectedLocation = { ...location };
+        selectedLocationLabel = formatSelectedLocationCoords(location);
         selectedAlert = null;
         updateSelectedLocationMarker(location);
         updateDisplayedAlertsForLocation();
+        loadSelectedLocationName(location);
     }
 
     /** Handles Windy singleclick events while the plugin is open. */
     function handleMapClick(ev: unknown): void {
+        console.log('NWS alerts map click event', ev);
         const location = locationFromClickEvent(ev);
         if (location) {
             selectLocation(location);
