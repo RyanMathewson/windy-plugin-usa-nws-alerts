@@ -1,4 +1,9 @@
-<section class:mobile-alert-ui={isMobileOrTablet} class:plugin__content={!isMobileOrTablet}>
+<section
+    bind:this={pluginElement}
+    class:mobile-alert-ui={isMobileOrTablet}
+    class:plugin__content={!isMobileOrTablet}
+    style:--alert-scroll-max-height={scrollBodyMaxHeight}
+>
     {#if !isMobileOrTablet}
         <div
             class="plugin__title plugin__title--chevron-back"
@@ -9,27 +14,40 @@
     {/if}
 
     {#if selectedAlert}
-        <AlertDetail
-            alert={selectedAlert}
-            onBack={() => {
-                selectedAlert = null;
-            }}
-        />
+        <div
+            class="all-alerts-back clickable"
+            on:click={showAlertList}
+        >
+            <span class="all-alerts-chevron" aria-hidden="true"></span>
+            All Alerts
+        </div>
+        <div class="alert-scroll-body">
+            <AlertDetail alert={selectedAlert} />
+        </div>
     {:else}
         <AlertControls
-            {filters}
             {timeAgo}
             locationLabel={selectedLocation ? selectedLocationLabel : 'Select a location on the map'}
+            filtersVisible={showFilters}
             onRefresh={loadAlerts}
-            onFiltersChange={handleFiltersChange}
+            onToggleFilters={toggleFiltersVisibility}
         />
-        <AlertList
-            {displayedAlerts}
-            {selectedLocation}
-            onSelectAlert={selectAlert}
-            onHighlightAlert={highlightAlert}
-            onUnhighlightAlert={unHighlightAlert}
-        />
+        <div class="alert-scroll-body">
+            {#if showFilters}
+                <AlertFilters
+                    {filters}
+                    onFiltersChange={handleFiltersChange}
+                />
+            {:else}
+                <AlertList
+                    {displayedAlerts}
+                    {selectedLocation}
+                    onSelectAlert={selectAlert}
+                    onHighlightAlert={highlightAlert}
+                    onUnhighlightAlert={unHighlightAlert}
+                />
+            {/if}
+        </div>
     {/if}
 </section>
 
@@ -42,6 +60,7 @@
     import { get as getReverseName } from '@windy/reverseName';
     import AlertControls from './components/AlertControls.svelte';
     import AlertDetail from './components/AlertDetail.svelte';
+    import AlertFilters from './components/AlertFilters.svelte';
     import AlertList from './components/AlertList.svelte';
     import config from './pluginConfig';
     import { fetchActiveAlerts, getZoneData } from './scripts/alertData';
@@ -89,6 +108,9 @@
     let lastRefresh: Date | null = null;
     let timeAgo = '...';
     let filters: AlertFilterState = createDefaultAlertFilters();
+    let pluginElement: HTMLElement | null = null;
+    let scrollBodyMaxHeight = 'none';
+    let showFilters = false;
 
     /** Loads NWS alerts, renders their map layers, and reapplies current filters. */
     async function loadAlerts(): Promise<void> {
@@ -141,6 +163,11 @@
         filtersChanged();
     }
 
+    /** Toggles the scrollable filter panel from the fixed alert header button. */
+    function toggleFiltersVisibility(): void {
+        showFilters = !showFilters;
+    }
+
     /** Recomputes filtered alerts and synchronizes Leaflet layer visibility. */
     function filtersChanged(): void {
         filteredAlerts = filterAlerts(allAlerts, filters);
@@ -177,6 +204,7 @@
 
     /** Selects a clicked map position and updates the visible alert list. */
     function selectLocation(location: SelectedLocation): void {
+        clearHighlightedAlerts();
         selectedLocation = { ...location };
         selectedLocationLabel = formatSelectedLocationCoords(location);
         selectedAlert = null;
@@ -188,6 +216,23 @@
     /** Selects a visible alert row for detail rendering. */
     function selectAlert(alert: DisplayedAlert): void {
         selectedAlert = alert;
+    }
+
+    /** Returns to the alert list and clears the selected alert's temporary highlight. */
+    function showAlertList(): void {
+        if (selectedAlert) {
+            unHighlightAlert(selectedAlert);
+        }
+        selectedAlert = null;
+    }
+
+    /** Clears any temporary list or map highlight before changing view context. */
+    function clearHighlightedAlerts(): void {
+        for (const alert of allAlerts) {
+            if (alert.isHighlighted) {
+                unHighlightAlert(alert);
+            }
+        }
     }
 
     /** Highlights a visible alert on the map and in the list. */
@@ -264,6 +309,19 @@
         return `${Math.floor(elapsedMs / DAY_MS)}d`;
     }
 
+    /** Measures the visible mobile plugin space so the nested alert body can own scrolling. */
+    function updateScrollBodyMaxHeight(): void {
+        if (!isMobileOrTablet || !pluginElement) {
+            scrollBodyMaxHeight = 'none';
+            return;
+        }
+
+        const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+        const pluginTop = pluginElement.getBoundingClientRect().top;
+        const availableHeight = Math.max(160, viewportHeight - pluginTop - 12);
+        scrollBodyMaxHeight = `${Math.floor(availableHeight)}px`;
+    }
+
     const lastUpdatedRefreshInterval = setInterval(() => {
         if (lastRefresh) {
             timeAgo = formatCompactElapsedTime(lastRefresh);
@@ -276,10 +334,15 @@
 
     onMount(() => {
         singleclick.on(name, handleMapClick);
+        updateScrollBodyMaxHeight();
+        window.addEventListener('resize', updateScrollBodyMaxHeight);
+        window.visualViewport?.addEventListener('resize', updateScrollBodyMaxHeight);
     });
 
     onDestroy(() => {
         singleclick.off(name, handleMapClick);
+        window.removeEventListener('resize', updateScrollBodyMaxHeight);
+        window.visualViewport?.removeEventListener('resize', updateScrollBodyMaxHeight);
         removeAllMapFeatures();
         removeSelectedLocationMarker(map, selectedLocationMarker);
         selectedLocationMarker = null;

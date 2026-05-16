@@ -1,11 +1,5 @@
 <div class="detail-view size-s">
     <div
-        class="all-alerts-back plugin__title--chevron-back clickable"
-        on:click={onBack}
-    >
-        All Alerts
-    </div>
-    <div
         class="alert detail-alert"
         style:border-left-color={colorFromSeverity(alert.severity)}
     >
@@ -46,5 +40,4 @@
     import type { DisplayedAlert } from '../scripts/alertTypes';
 
     export let alert: DisplayedAlert;
-    export let onBack: () => void;
 </script>
