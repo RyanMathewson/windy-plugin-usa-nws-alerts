@@ -109,7 +109,7 @@ export function updateSelectedLocationMarker(
 /** Removes the selected-location marker from the map. */
 export function removeSelectedLocationMarker(mapInstance: L.Map, marker: L.Marker | null): void {
     if (marker) {
-        marker.removeFrom(mapInstance);
+        mapInstance.removeLayer(marker);
     }
 }
 

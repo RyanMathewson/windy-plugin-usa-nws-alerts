@@ -69,8 +69,21 @@ export function displayedAlertFromNwsAlert(
 
     const alert = createDisplayedAlert(nwsAlert);
     applyAlertGeometry(alert, nwsAlert, zones);
+    alert.bounds = computeBoundsFromLayers(alert.layers);
 
     return alert.layers.length > 0 && alert.polygons.length > 0 ? alert : null;
+}
+
+/** Computes the union LatLngBounds of an alert's polyline layers for viewport intersection. */
+function computeBoundsFromLayers(layers: L.Polyline[]): L.LatLngBounds | null {
+    if (layers.length === 0) {
+        return null;
+    }
+    const bounds = layers[0].getBounds();
+    for (let i = 1; i < layers.length; i++) {
+        bounds.extend(layers[i].getBounds());
+    }
+    return bounds;
 }
 
 /** Creates the display model fields that are independent from geometry source. */
@@ -96,6 +109,7 @@ function createDisplayedAlert(nwsAlert: NWSAlert): DisplayedAlert {
         urgency: nwsAlert.properties.urgency,
         layers: [],
         polygons: [],
+        bounds: null,
         isAddedToMap: false,
         isHighlighted: false,
     };

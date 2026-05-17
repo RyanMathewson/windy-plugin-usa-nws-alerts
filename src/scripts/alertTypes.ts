@@ -48,6 +48,7 @@ export interface DisplayedAlert {
     instruction: string | null;
     layers: L.Polyline[];
     polygons: GeoJsonPolygon[];
+    bounds: L.LatLngBounds | null;
     isAddedToMap: boolean;
     isHighlighted: boolean;
     severityLevel: number;

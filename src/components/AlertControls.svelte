@@ -3,6 +3,16 @@
     <div class="alert-header-location size-s">
         <span class="alert-header-icon" aria-hidden="true">{@html locationSvg}</span>
         <span class="alert-header-location-label">{locationLabel}</span>
+        {#if onClearLocation}
+            <button
+                class="alert-header-clear"
+                type="button"
+                aria-label="Clear selected location"
+                on:click={onClearLocation}
+            >
+                ✕
+            </button>
+        {/if}
     </div>
     <div class="alert-header-actions">
         <button
@@ -36,6 +46,7 @@
     export let filtersVisible: boolean;
     export let onRefresh: () => void;
     export let onToggleFilters: () => void;
+    export let onClearLocation: (() => void) | undefined = undefined;
 
     const filterSvg = normalizeSvg(filterIcon);
     const locationSvg = normalizeSvg(locationIcon);

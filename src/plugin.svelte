@@ -27,10 +27,11 @@
     {:else}
         <AlertControls
             {timeAgo}
-            locationLabel={selectedLocation ? selectedLocationLabel : 'Select a location on the map'}
+            locationLabel={selectedLocation ? selectedLocationLabel : 'Showing alerts in view'}
             filtersVisible={showFilters}
             onRefresh={loadAlerts}
             onToggleFilters={toggleFiltersVisibility}
+            onClearLocation={selectedLocation ? clearSelectedLocation : undefined}
         />
         <div class="alert-scroll-body">
             {#if showFilters}
@@ -181,16 +182,29 @@
             }
         }
 
-        updateDisplayedAlertsForLocation();
+        updateDisplayedAlerts();
     }
 
-    /** Recomputes the clicked-position list from current filters and selected location. */
-    function updateDisplayedAlertsForLocation(): void {
+    /** Recomputes the alert list from current filters and the active selection mode. */
+    function updateDisplayedAlerts(): void {
         const nextDisplayedAlerts = selectedLocation
             ? filteredAlerts.filter(alert => alertContainsLocation(alert, selectedLocation!))
-            : [];
+            : filteredAlertsInViewport();
         selectedAlert = selectedAlert && nextDisplayedAlerts.includes(selectedAlert) ? selectedAlert : null;
         displayedAlerts = nextDisplayedAlerts;
+    }
+
+    /** Returns category-filtered alerts whose geometry intersects the current map viewport. */
+    function filteredAlertsInViewport(): DisplayedAlert[] {
+        const mapBounds = map.getBounds();
+        return filteredAlerts.filter(alert => alert.bounds !== null && mapBounds.intersects(alert.bounds));
+    }
+
+    /** Refreshes the viewport-filtered list whenever the user pans or zooms. */
+    function mapMoved(): void {
+        if (!selectedLocation) {
+            updateDisplayedAlerts();
+        }
     }
 
     /** Handles Windy singleclick events while the plugin is open. */
@@ -208,8 +222,19 @@
         selectedLocationLabel = formatSelectedLocationCoords(location);
         selectedAlert = null;
         selectedLocationMarker = updateSelectedLocationMarker(map, selectedLocationMarker, location);
-        updateDisplayedAlertsForLocation();
+        updateDisplayedAlerts();
         loadSelectedLocationName(location);
+    }
+
+    /** Returns to viewport mode, dropping the selected point and its pin. */
+    function clearSelectedLocation(): void {
+        clearHighlightedAlerts();
+        selectedLocation = null;
+        selectedAlert = null;
+        locationNameRequestId += 1;
+        removeSelectedLocationMarker(map, selectedLocationMarker);
+        selectedLocationMarker = null;
+        updateDisplayedAlerts();
     }
 
     /** Selects a visible alert row for detail rendering. */
@@ -338,6 +363,8 @@
 
     onMount(() => {
         singleclick.on(name, handleMapClick);
+        map.on('moveend', mapMoved);
+        map.on('zoomend', mapMoved);
         updateScrollBodyMaxHeight();
         window.addEventListener('resize', updateScrollBodyMaxHeight);
         window.visualViewport?.addEventListener('resize', updateScrollBodyMaxHeight);
@@ -345,6 +372,8 @@
 
     onDestroy(() => {
         singleclick.off(name, handleMapClick);
+        map.off('moveend', mapMoved);
+        map.off('zoomend', mapMoved);
         window.removeEventListener('resize', updateScrollBodyMaxHeight);
         window.visualViewport?.removeEventListener('resize', updateScrollBodyMaxHeight);
         removeAllMapFeatures();

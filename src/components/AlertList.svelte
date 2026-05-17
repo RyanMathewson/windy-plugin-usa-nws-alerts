@@ -1,10 +1,10 @@
-{#if !selectedLocation}
+{#if displayedAlerts.length === 0}
     <div class="empty-state size-s">
-        Click a position on the map to show active alerts for that location.
-    </div>
-{:else if displayedAlerts.length === 0}
-    <div class="empty-state size-s">
-        No active alerts for this location.
+        {#if selectedLocation}
+            No active alerts for this location.
+        {:else}
+            No active alerts in this view.
+        {/if}
     </div>
 {/if}
 
