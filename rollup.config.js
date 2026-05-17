@@ -15,6 +15,20 @@ import { transformCodeToESMPlugin, keyPEM, certificatePEM } from '@windycom/plug
 
 const useSourceMaps = true;
 
+const svgText = () => ({
+    name: 'svg-text',
+    transform(code, id) {
+        if (!id.endsWith('.svg')) {
+            return undefined;
+        }
+
+        return {
+            code: `export default ${JSON.stringify(code)};`,
+            map: { mappings: '' },
+        };
+    },
+});
+
 const buildConfigurations = {
     src: {
         input: 'src/plugin.svelte',
@@ -78,8 +92,9 @@ export default {
         clearScreen: false,
     },
     plugins: [
+        svgText(),
         typescript({
-            sourceMap: useSourceMaps,
+            sourceMap: false,
             inlineSources: false,
         }),
         rollupSwc({

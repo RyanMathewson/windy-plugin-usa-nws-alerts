@@ -1,0 +1,224 @@
+:global(.plugin__content) {
+    padding-top: 5px;
+}
+
+:global(.alert-header) {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+:global(.alert-header-divider) {
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+:global(.mobile-alert-ui .alert-header-divider:first-child) {
+    display: none;
+}
+
+:global(.alert-header-location) {
+    align-items: center;
+    display: flex;
+    font-size: 15px;
+    gap: 6px;
+    min-width: 0;
+}
+
+:global(.alert-header-location-label) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+:global(.alert-header-actions) {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+:global(.alert-header-button) {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 4px;
+    color: inherit;
+    cursor: pointer;
+    display: flex;
+    font-size: 15px;
+    gap: 4px;
+    justify-content: center;
+    line-height: 1;
+    min-height: 28px;
+    min-width: 0;
+    padding: 3px 8px;
+}
+
+:global(.alert-header-button span) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+:global(.alert-header-button--active) {
+    background: rgba(244, 93, 34, 0.24);
+    border-color: rgba(244, 93, 34, 0.72);
+}
+
+:global(.alert-header-icon) {
+    display: block;
+    flex: 0 0 auto;
+    height: 18px;
+    line-height: 0;
+    width: 18px;
+}
+
+:global(.alert-header-icon svg) {
+    display: block;
+    height: 18px;
+    width: 18px;
+}
+
+:global(.filter-list) {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+:global(.all-alerts-back) {
+    align-items: center;
+    flex: 0 0 auto;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 14px;
+    gap: 4px;
+    line-height: 1.2;
+    margin-bottom: 10px;
+}
+
+:global(.all-alerts-chevron) {
+    border-bottom: 2px solid currentColor;
+    border-left: 2px solid currentColor;
+    display: inline-block;
+    height: 8px;
+    transform: rotate(45deg);
+    width: 8px;
+}
+
+:global(.alert) {
+    border-left: 5px solid;
+    padding-left: 10px;
+}
+
+:global(.alert-row) {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    padding-bottom: 8px;
+    padding-top: 8px;
+}
+
+:global(.alert-row-content) {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+:global(.alert-row-chevron) {
+    flex: 0 0 auto;
+    font-size: 24px;
+    line-height: 1;
+    opacity: 0.7;
+}
+
+:global(.detail-alert) {
+    padding-bottom: 10px;
+}
+
+:global(.highlightedAlert) {
+    border-left: 10px solid;
+    padding-left: 5px;
+}
+
+:global(.alert-scroll-body) {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+:global(.mobile-alert-ui) {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    max-height: var(--alert-scroll-max-height);
+    min-height: 0;
+    overflow: hidden;
+    padding: 8px;
+    width: 100%;
+}
+
+:global(.mobile-alert-ui .alert-scroll-body) {
+    -webkit-overflow-scrolling: touch;
+    flex: 1 1 auto;
+    max-height: var(--alert-scroll-max-height);
+    min-height: 0;
+    overflow-y: auto;
+    padding-bottom: 40px;
+}
+
+:global(.metadata-grid) {
+    display: grid;
+    gap: 4px 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+:global(.message-block) {
+    white-space: pre-wrap;
+}
+
+:global(.message-label) {
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+:global(.location-status),
+:global(.empty-state) {
+    line-height: 1.4;
+}
+
+:global(.nws-alert-layer) {
+    cursor: pointer;
+}
+
+:global(.selected-location-pin-icon) {
+    background: transparent;
+    border: 0;
+}
+
+:global(.selected-location-pin) {
+    align-items: center;
+    background: #f45d22;
+    border: 2px solid #ffffff;
+    border-radius: 50% 50% 50% 0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+    display: flex;
+    height: 22px;
+    justify-content: center;
+    transform: rotate(-45deg);
+    transform-origin: 50% 50%;
+    width: 22px;
+}
+
+:global(.selected-location-pin svg) {
+    display: block;
+    height: 14px;
+    transform: rotate(45deg);
+    width: 14px;
+}
+
+:global(.noWrap) {
+    white-space: nowrap;
+}
+
+:global(.hasTitle) {
+    text-decoration: underline dotted;
+}
