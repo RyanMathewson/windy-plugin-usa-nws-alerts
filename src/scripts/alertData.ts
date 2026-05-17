@@ -10,6 +10,9 @@ let zoneData: ZoneGeometryData | null = null;
 /** Fetches active NWS alert features from the public weather.gov API. */
 export async function fetchActiveAlerts(): Promise<NWSAlert[]> {
     const response = await fetch(ACTIVE_ALERTS_URL);
+    if (!response.ok) {
+        throw new Error(`NWS alerts request failed: ${response.status} ${response.statusText}`);
+    }
     const data = await response.json() as { features: NWSAlert[] };
     return data.features;
 }
@@ -18,6 +21,9 @@ export async function fetchActiveAlerts(): Promise<NWSAlert[]> {
 export async function getZoneData(): Promise<ZoneGeometryData> {
     if (!zoneData) {
         const response = await fetch(ZONE_DATA_URL);
+        if (!response.ok) {
+            throw new Error(`Zone geometry request failed: ${response.status} ${response.statusText}`);
+        }
         zoneData = await response.json() as ZoneGeometryData;
     }
     return zoneData;

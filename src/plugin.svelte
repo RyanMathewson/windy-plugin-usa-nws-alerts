@@ -195,7 +195,6 @@
 
     /** Handles Windy singleclick events while the plugin is open. */
     function handleMapClick(ev: unknown): void {
-        console.log('NWS alerts map click event', ev);
         const location = locationFromClickEvent(ev);
         if (location) {
             selectLocation(location);
@@ -265,17 +264,22 @@
             if (requestId !== locationNameRequestId) {
                 return;
             }
-            console.log('Reverse geocoder result:', reverseName);
             selectedLocationLabel = reverseName ?? formatSelectedLocationCoords(location);
         } catch (reason) {
             handleReverseNameError(reason, requestId, location);
         }
     }
 
-    /** Tries Windy's reverse geocoder and returns a useful display label when available. */
+    /** Tries Windy's reverse geocoder at progressively broader zoom levels and returns the first valid label. */
     async function getBestReverseName(location: SelectedLocation): Promise<string | null> {
-        const reverseName = await getReverseName(location, REVERSE_NAME_ZOOMS[0]) as ReverseNameResult;
-        return formatReverseName(reverseName);
+        for (const zoom of REVERSE_NAME_ZOOMS) {
+            const reverseName = await getReverseName(location, zoom) as ReverseNameResult;
+            const formatted = formatReverseName(reverseName);
+            if (formatted) {
+                return formatted;
+            }
+        }
+        return null;
     }
 
     /** Builds a concise place label from Windy's reverse geocoder response. */
